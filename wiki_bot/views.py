@@ -72,8 +72,8 @@ class WikiBotView(View):
                 context, article_id = search.search_text(receive_text)
 
                 if context:
-                    answer_text = model_qa_ml(context, [receive_text])[0][0]
-                    print(answer_text)
+                    answer_text = model_qa_ml([context], [receive_text])[0][0]
+                    print("Answer: ", answer_text)
 
                     Answer(
                         question=Question.objects.latest('id'),
