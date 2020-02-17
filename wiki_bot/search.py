@@ -83,3 +83,9 @@ def search_text(query):
 
         return outcome_text, _id
     return None, None
+
+def check_outcome(text):
+    if re.search(r'\bnie\b|\bno\b|\b[ź|z]le\b|\bz[łla]\b', text):
+        return False
+    if re.search(r'\btak\b|\bdobrze\b|\bdobra\b|\bgood\b', text):
+        return True

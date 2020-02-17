@@ -10,6 +10,7 @@ import requests
 from .models import Chat, Question, Answer, AnswerTime, CheckAnswer
 
 from . import search
+from . import custom_message
 from deeppavlov import build_model, configs
 
 model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
@@ -47,71 +48,62 @@ class WikiBotView(View):
         elif receive_text.startswith('/'):
             pass
 
-        elif receive_text.lower() == 'tak':
-            self.send_message("Super!", receive_chat_id)
-
-            CheckAnswer(
-                question=Question.objects.latest('id'),
-                chat=Chat.objects.get(id=receive_chat_id),
-                if_right=True
-            ).save()
-
-            time.sleep(0.5)
-            self.send_message("Zadaj mi jeszcze jakieś pytanie ;)", receive_chat_id)
-
-        elif receive_text.lower() == 'nie':
-            self.send_message("Szkoda :(", receive_chat_id)
-
-            CheckAnswer(
-                question=Question.objects.latest('id'),
-                chat=Chat.objects.get(id=receive_chat_id),
-                if_right=False
-            ).save()
-
-            time.sleep(0.5)
-            self.send_message("Zadaj pytanie w innny sposób ;)", receive_chat_id)
-
         else:
-            Question(
-                chat=Chat.objects.get(id=receive_chat_id),
-                question_text=receive_text,
-            ).save()
+            outcome = search.check_outcome(receive_text)
 
-            context, article_id = search.search_text(receive_text)
-
-            if context:
-                answer_text = model_qa_ml(context, [receive_text])[0][0]
-                print(answer_text)
-
-                Answer(
-                    question=Question.objects.latest('id'),
-                    chat=Chat.objects.get(id=receive_chat_id),
-                    article_id=article_id,
-                    input_text=context,
-                    answer_text=answer_text
-                ).save()
-
-                if len(answer_text) == 0:
-                    self.send_message("Nie rozumiem Cię :(", receive_chat_id)
-                    time.sleep(0.5)
-                    self.send_message("Zadaj pytanie w innny sposób ;)", receive_chat_id)
-
-                else:
-                    self.send_message(answer_text, receive_chat_id)
-                    time.sleep(0.5)
-                    self.send_message("Czy odpowiedziałem wyczerpująco na Twoje pytanie?", receive_chat_id)
-
-            else:
-                self.send_message("Nie rozumiem Cię :(", receive_chat_id)
+            if outcome is not None:
+                self.send_message(custom_message.prepare_custom_message('output_answers',outcome), receive_chat_id)
 
                 CheckAnswer(
                     question=Question.objects.latest('id'),
                     chat=Chat.objects.get(id=receive_chat_id),
-                    if_right=False
+                    if_right=outcome
                 ).save()
 
                 time.sleep(0.5)
-                self.send_message("Zadaj pytanie w innny sposób ;)", receive_chat_id)
+                self.send_message(custom_message.prepare_custom_message('next_questions',outcome), receive_chat_id)
+
+            else:
+                Question(
+                    chat=Chat.objects.get(id=receive_chat_id),
+                    question_text=receive_text,
+                ).save()
+
+                context, article_id = search.search_text(receive_text)
+
+                if context:
+                    answer_text = model_qa_ml(context, [receive_text])[0][0]
+                    print(answer_text)
+
+                    Answer(
+                        question=Question.objects.latest('id'),
+                        chat=Chat.objects.get(id=receive_chat_id),
+                        article_id=article_id,
+                        input_text=context,
+                        answer_text=answer_text
+                    ).save()
+
+                    if len(answer_text) == 0:
+                        self.send_message("Nie rozumiem Cię :(", receive_chat_id)
+                        time.sleep(0.5)
+                        self.send_message("Zadaj pytanie w innny sposób ;)", receive_chat_id)
+
+                    else:
+                        self.send_message(answer_text, receive_chat_id)
+                        time.sleep(0.5)
+                        self.send_message("Czy odpowiedziałem wyczerpująco na Twoje pytanie?", receive_chat_id)
+
+                else:
+                    self.send_message("Nie rozumiem Cię :(", receive_chat_id)
+
+                    CheckAnswer(
+                        question=Question.objects.latest('id'),
+                        chat=Chat.objects.get(id=receive_chat_id),
+                        if_right=False
+                    ).save()
+
+                    time.sleep(0.5)
+                    self.send_message("Zadaj pytanie w innny sposób ;)", receive_chat_id)
 
         return JsonResponse({"ok": "POST request processed"})
 
