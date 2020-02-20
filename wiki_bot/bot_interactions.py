@@ -7,8 +7,8 @@ from .models import Chat, Question, Answer, CheckAnswer
 from .bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
 from . import custom_message, search
 
-# from deeppavlov import build_model, configs
-# model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
+from deeppavlov import build_model, configs
+model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
 
 
 class BotInteraction:
@@ -54,13 +54,10 @@ class BotInteraction:
     def user_question(self, _id, text):
         Question.save_question(_id, text)
 
-        # context, article_id = search.search_text(text)
-        context = 'blabla'
-        article_id = 100
+        context, article_id = search.search_text(text)
 
         if context:
-            # answer_text = model_qa_ml([context], [text])[0][0]
-            answer_text = 'blabla'
+            answer_text = model_qa_ml([context], [text])[0][0]
             print("Answer: ", answer_text)
 
             Answer.save_answer(_id, article_id, context, answer_text)
