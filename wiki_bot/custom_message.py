@@ -10,6 +10,18 @@ custom_messages = {
         {
         False:['Szkoda ;(', 'Przepraszam, że Ci nie mogłem pomóc'],
         True:['Cieszę się!', 'Super!', 'Uff.. Udało się :)']
+        },
+    'greet_answers':
+        {
+        'greet': ['Siema, co tam?', 'Siema siema', 'Witaj, w czym mogę Ci pomóc?']
+        },
+    'sign_off_answers':
+        {
+        'sign_off': ['Dobranoc', 'Elo Ziom', 'Do zobaczenia ponownie', 'Siema siema']
+        },
+    'remind_about_check_answer':
+        {
+        'check_answer': ['Nie powiedziałeś czy dobrze odpowiedzałem', 'Daj znać czy dobrze odpowiedziałem']
         }
 }
 
