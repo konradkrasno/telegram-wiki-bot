@@ -4,5 +4,5 @@ from django.views.decorators.csrf import csrf_exempt
 from . import views
 
 urlpatterns = [
-    path('wiki_bot', csrf_exempt(views.WikiBotView.as_view())),
+    path('wiki_bot', csrf_exempt(views.BotInteractionView.as_view())),
 ]

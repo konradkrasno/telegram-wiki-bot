@@ -1,117 +1,81 @@
-import time
-from django.http import JsonResponse
 from django.views import View
+from django.http import JsonResponse
 
-import json
-import os
-
-import requests
-
-from .models import Chat, Question, Answer, AnswerTime, CheckAnswer
-
-from . import search
-from . import custom_message
-from deeppavlov import build_model, configs
-
-model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
-
-TELEGRAM_URL = "https://api.telegram.org/bot"
-WIKI_BOT_TOKEN = os.getenv("WIKI_BOT_TOKEN", "error_token")
+from .bot_interactions import BotInteraction
+from .models import State, Greeting
+from .search import check_outcome
 
 
-class WikiBotView(View):
+class BotInteractionView(BotInteraction, View):
     def post(self, request):
-        chat = Chat()
+        receive_message = self.request_message(request)
+        receive_chat_id, receive_chat_username = self.get_user_data_from_message(receive_message)
+        receive_text = self.get_text_from_message(receive_message)
+        print(receive_text)
 
-        data = json.loads(request.body)
-        message = data["message"]
-        receive_chat_id = message["chat"]["id"]
-        receive_chat_username = message["chat"]["first_name"]
-
-        if not chat.check_if_chat_id_already_exists(receive_chat_id):
-            Chat(
-                id=receive_chat_id,
-                username=receive_chat_username
-            ).save()
-
-        try:
-            receive_text = message["text"].strip().lower()
-        except Exception as e:
-            print(e)
-            return JsonResponse({"ok": "POST request processed"})
+        state = State()
+        greeting = Greeting()
+        last_state = state.get_last_state(receive_chat_id)
+        last_greeting = greeting.get_last_greeting(receive_chat_id)
+        print("last state (chat_id: {0}): {1}: ".format(receive_chat_id, last_state))
+        print("last greeting (chat_id: {0}): {1}: ".format(receive_chat_id, last_greeting))
 
         if receive_text == '/start':
-            self.send_message("Witaj {}. Jestem WikiBot, zapytaj mnie o jakąś informację z Wikipedii,"
-                              " a dam Ci odpowiedź!"
-                              .format(receive_chat_username), receive_chat_id)
+            self.start_chat(receive_chat_id, receive_chat_username)
+            greeting.change_greeting(receive_chat_id, greeting='first_greet')
 
         elif receive_text.startswith('/'):
             pass
 
-        else:
-            outcome = search.check_outcome(receive_text)
-
-            if outcome is not None:
-                self.send_message(custom_message.prepare_custom_message('output_answers',outcome), receive_chat_id)
-
-                CheckAnswer(
-                    question=Question.objects.latest('id'),
-                    chat=Chat.objects.get(id=receive_chat_id),
-                    if_right=outcome
-                ).save()
-
-                time.sleep(0.5)
-                self.send_message(custom_message.prepare_custom_message('next_questions',outcome), receive_chat_id)
-
+        elif last_state == 'question':
+            outcome = check_outcome(receive_text)
+            if outcome == 'greet':
+                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+            elif outcome == 'sign_off':
+                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+            elif outcome == 'greet-sign_off':
+                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
             else:
-                Question(
-                    chat=Chat.objects.get(id=receive_chat_id),
-                    question_text=receive_text,
-                ).save()
+                answer = self.user_question(receive_chat_id, receive_text)
 
-                context, article_id = search.search_text(receive_text)
+                if answer:
+                    state.change_state(receive_chat_id, state='check_answer')
 
-                if context:
-                    answer_text = model_qa_ml([context], [receive_text])[0][0]
-                    print("Answer: ", answer_text)
-
-                    Answer(
-                        question=Question.objects.latest('id'),
-                        chat=Chat.objects.get(id=receive_chat_id),
-                        article_id=article_id,
-                        input_text=context,
-                        answer_text=answer_text
-                    ).save()
-
-                    if len(answer_text) == 0:
-                        self.send_message("Nie rozumiem Cię :(", receive_chat_id)
-                        time.sleep(0.5)
-                        self.send_message("Zadaj pytanie w innny sposób ;)", receive_chat_id)
-
-                    else:
-                        self.send_message(answer_text, receive_chat_id)
-                        time.sleep(0.5)
-                        self.send_message("Czy odpowiedziałem wyczerpująco na Twoje pytanie?", receive_chat_id)
-
-                else:
-                    self.send_message("Nie rozumiem Cię :(", receive_chat_id)
-
-                    CheckAnswer(
-                        question=Question.objects.latest('id'),
-                        chat=Chat.objects.get(id=receive_chat_id),
-                        if_right=False
-                    ).save()
-
-                    time.sleep(0.5)
-                    self.send_message("Zadaj pytanie w innny sposób ;)", receive_chat_id)
+        elif last_state == 'check_answer':
+            outcome = check_outcome(receive_text)
+            if outcome is True or outcome is False:
+                self.check_outcome_for_feedback(receive_chat_id, outcome)
+            elif outcome == 'greet':
+                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+            elif outcome == 'sign_off':
+                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+            elif outcome == 'greet-sign_off':
+                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+            else:
+                self.remind_about_check_answer(receive_chat_id)
 
         return JsonResponse({"ok": "POST request processed"})
 
-    @staticmethod
-    def send_message(message, chat_id):
-        data = {
-            "chat_id": chat_id,
-            "text": message,
-            "parse_mode": "Markdown",
-        }
-        return requests.post(f"{TELEGRAM_URL}{WIKI_BOT_TOKEN}/sendMessage", data=data)
+    def check_outcome_for_feedback(self, _id, outcome):
+        state = State()
+
+        self.check_answer(outcome, _id)
+        state.change_state(_id, state='question')
+
+    def check_outcome_for_greeting(self, _id, last_greeting, outcome):
+        state = State()
+        greeting = Greeting()
+
+        if last_greeting == 'first_greet' and outcome in ['greet', 'greet-sign_off']:
+            greeting.change_greeting(_id, greeting='greet')
+        elif last_greeting == 'first_greet' and outcome in ['sign_off']:
+            self.sign_off(_id)
+            greeting.change_greeting(_id, greeting='sign_off')
+        elif last_greeting == 'greet' and outcome in ['sign_off', 'greet-sign_off']:
+            self.sign_off(_id)
+            greeting.change_greeting(_id, greeting='sign_off')
+            state.change_state(_id, state='question')
+        elif last_greeting == 'sign_off' and outcome in ['greet', 'greet-sign_off']:
+            self.greet(_id)
+            greeting.change_greeting(_id, greeting='greet')
+            state.change_state(_id, state='question')
