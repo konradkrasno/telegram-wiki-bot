@@ -21,8 +21,9 @@ class BotInteractionView(BotInteraction, View):
         print("last greeting (chat_id: {0}): {1}: ".format(receive_chat_id, last_greeting))
 
         if receive_text == '/start':
-            self.start_chat(receive_chat_id, receive_chat_username)
-            greeting.change_greeting(receive_chat_id, greeting='first_greet')
+            state.change_state(chat_id=receive_chat_id, state='question')
+            greeting.change_greeting(chat_id=receive_chat_id, greeting='first_greet')
+            self.start_chat(_id=receive_chat_id, username=receive_chat_username)
 
         elif receive_text.startswith('/'):
             pass
@@ -36,9 +37,8 @@ class BotInteractionView(BotInteraction, View):
             elif outcome == 'greet-sign_off':
                 self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
             else:
-                answer = self.user_question(receive_chat_id, receive_text)
-
-                if answer:
+                check_answer, _ = self.user_question(receive_chat_id, receive_text)
+                if check_answer:
                     state.change_state(receive_chat_id, state='check_answer')
 
         elif last_state == 'check_answer':
@@ -58,9 +58,8 @@ class BotInteractionView(BotInteraction, View):
 
     def check_outcome_for_feedback(self, _id, outcome):
         state = State()
-
-        self.check_answer(outcome, _id)
         state.change_state(_id, state='question')
+        self.check_answer(outcome, _id)
 
     def check_outcome_for_greeting(self, _id, last_greeting, outcome):
         state = State()
@@ -69,13 +68,13 @@ class BotInteractionView(BotInteraction, View):
         if last_greeting == 'first_greet' and outcome in ['greet', 'greet-sign_off']:
             greeting.change_greeting(_id, greeting='greet')
         elif last_greeting == 'first_greet' and outcome in ['sign_off']:
-            self.sign_off(_id)
             greeting.change_greeting(_id, greeting='sign_off')
-        elif last_greeting == 'greet' and outcome in ['sign_off', 'greet-sign_off']:
             self.sign_off(_id)
+        elif last_greeting == 'greet' and outcome in ['sign_off', 'greet-sign_off']:
             greeting.change_greeting(_id, greeting='sign_off')
             state.change_state(_id, state='question')
+            self.sign_off(_id)
         elif last_greeting == 'sign_off' and outcome in ['greet', 'greet-sign_off']:
-            self.greet(_id)
             greeting.change_greeting(_id, greeting='greet')
             state.change_state(_id, state='question')
+            self.greet(_id)
