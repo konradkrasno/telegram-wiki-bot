@@ -1,8 +1,8 @@
 from django.test import TestCase, RequestFactory
 
-from wiki_bot.bot_interactions import BotInteraction
-from wiki_bot.models import Chat, Question, Answer, CheckAnswer
-from wiki_bot.custom_message import custom_messages
+from ..bot_interactions import BotInteraction
+from ..models import Chat, Question, Answer, CheckAnswer
+from ..custom_message import custom_messages
 
 import json
 
@@ -62,7 +62,6 @@ class BotInteractionTests(TestCase):
 
     def test_start_chat(self):
         start = self.bi.start_chat(_id=secure["TEST_CHAT_ID"], username="test")
-
         start_text = json.loads(start.content)["result"]["text"]
 
         start_message = "Witaj {}. Jestem WikiBot, zapytaj mnie o jakąś informację z Wikipedii, a dam Ci odpowiedź!"\

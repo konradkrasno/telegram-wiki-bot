@@ -1,8 +1,8 @@
 from django.test import TestCase
 
-from wiki_bot.views import BotInteractionView
-from wiki_bot.bot_interactions import BotInteraction
-from wiki_bot.models import Chat, Question, Answer, CheckAnswer, State
+from ..views import BotInteractionView
+from ..bot_interactions import BotInteraction
+from ..models import Chat, Question, Answer, CheckAnswer, State
 
 import json
 
