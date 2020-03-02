@@ -23,6 +23,7 @@ class BotInteractionView(BotInteraction, View):
         if receive_text == '/start':
             self.start_chat(receive_chat_id, receive_chat_username)
             greeting.change_greeting(receive_chat_id, greeting='first_greet')
+            state.change_state(chat_id=receive_chat_id, state='question')
 
         elif receive_text.startswith('/'):
             pass

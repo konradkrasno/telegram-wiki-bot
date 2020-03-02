@@ -13,4 +13,4 @@ class QA():
 
 
 qaClass = QA(model)
-qaClass.get_answer_from_text("Od 1929 Wisława Szymborska mieszkała w Krakowie, gdzie debiutowała w 1945 na łamach „Dziennika Polskiego” wierszem Szukam słowa",  'Jakim wierszem debiutowała Szymborska?')
+# qaClass.get_answer_from_text("Od 1929 Wisława Szymborska mieszkała w Krakowie, gdzie debiutowała w 1945 na łamach „Dziennika Polskiego” wierszem Szukam słowa",  'Jakim wierszem debiutowała Szymborska?')

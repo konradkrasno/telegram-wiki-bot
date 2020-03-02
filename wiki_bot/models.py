@@ -55,7 +55,7 @@ class Answer(models.Model):
     @classmethod
     def save_answer(cls, chat_id, article_id, input_text, answer_text):
         cls(
-            question=Question.objects.latest('id'),
+            question=Question.objects.filter(chat=chat_id).latest('id'),
             chat=Chat.objects.get(id=chat_id),
             article_id=article_id,
             input_text=input_text,
