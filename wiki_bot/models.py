@@ -77,7 +77,7 @@ class CheckAnswer(models.Model):
     @classmethod
     def save_check_answer(cls, chat_id, if_right):
         cls(
-            question=Question.objects.latest('id'),
+            question=Question.objects.filter(chat=chat_id).latest('id'),
             chat=Chat.objects.get(id=chat_id),
             if_right=if_right
         ).save()
