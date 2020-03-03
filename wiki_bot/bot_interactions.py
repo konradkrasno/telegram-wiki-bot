@@ -1,7 +1,8 @@
+import requests
+
 import json
 from django.http import JsonResponse
 
-import requests
 
 from .models import Chat, Question, Answer, CheckAnswer
 from .bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
@@ -40,7 +41,11 @@ class BotInteraction:
             "text": message,
             "parse_mode": "Markdown",
         }
-        return requests.post(f"{TELEGRAM_URL}{WIKI_BOT_TOKEN}/sendMessage", data=data)
+        response = requests.post(f"{TELEGRAM_URL}{WIKI_BOT_TOKEN}/sendMessage", data=data)
+
+        if response.status_code == 200:
+            return response
+        return None
 
     def start_chat(self, _id, username):
         Chat.add_user_data_to_db(chat_id=_id, username=username)
