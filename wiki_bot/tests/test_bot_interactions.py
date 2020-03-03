@@ -1,4 +1,5 @@
 from django.test import TestCase, RequestFactory
+from unittest.mock import Mock, patch
 
 from ..bot_interactions import BotInteraction
 from ..models import Chat, Question, Answer, CheckAnswer
@@ -30,6 +31,22 @@ class BotInteractionTests(TestCase):
                                  'date': 1582723459,
                                  'text': 'test text'}}
         self.bi = BotInteraction()
+        self.json_data = {
+            "ok": True,
+            "result":
+                {"message_id": 1234,
+                 "from": {"id": 996463999,
+                          "is_bot": True,
+                          "first_name": "WikiBot",
+                          "username": "kondzio_bot"},
+                 "chat": {"id": 100,
+                          "first_name": "test_first_name",
+                          "last_name": "test_last_name",
+                          "type": "private"},
+                 "date": 1582900572,
+                 "text": "test message"
+                 }
+        }
 
     def test_request_message(self):
         request = self.factory.post('/wiki_bot', self.data, content_type='application/json')
@@ -56,9 +73,19 @@ class BotInteractionTests(TestCase):
         self.assertEqual(text, '')
 
     def test_send_message(self):
-        msg = BotInteraction.send_message(message='test message', chat_id=secure["TEST_CHAT_ID"])
-        msg_text = json.loads(msg.content)["result"]["text"]
-        self.assertEqual(msg_text, "test message")
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        mock_response = BotInteraction.send_message(message="test message", chat_id=100)
+
+        mock_get_patcher.stop()
+
+        self.assertIsNotNone(mock_response)
+        self.assertEqual(mock_response.status_code, 200)
+        self.assertEqual(mock_response.json(), self.json_data)
 
     def test_start_chat(self):
         start = self.bi.start_chat(_id=secure["TEST_CHAT_ID"], username="test")
