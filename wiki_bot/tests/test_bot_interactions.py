@@ -7,9 +7,6 @@ from ..custom_message import custom_messages
 
 import json
 
-with open('secure.json', 'r') as file:
-    secure = json.load(file)
-
 
 # Create your tests here.
 
@@ -29,7 +26,9 @@ class BotInteractionTests(TestCase):
                                           'last_name': 'test_last_name',
                                           'type': 'private'},
                                  'date': 1582723459,
-                                 'text': 'test text'}}
+                                 'text': 'test text'
+                                 }
+                     }
         self.bi = BotInteraction()
         self.json_data = {
             "ok": True,
@@ -88,35 +87,63 @@ class BotInteractionTests(TestCase):
         self.assertEqual(mock_response.json(), self.json_data)
 
     def test_start_chat(self):
-        start = self.bi.start_chat(_id=secure["TEST_CHAT_ID"], username="test")
-        start_text = json.loads(start.content)["result"]["text"]
+        self.json_data["result"]["text"] = "Witaj TestUser. Jestem WikiBot, zapytaj mnie o jakąś informację" \
+                                           " z Wikipedii, a dam Ci odpowiedź!"
 
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        mock_response = self.bi.start_chat(_id=100, username="TestUser")
+
+        mock_get_patcher.stop()
+
+        start_text = mock_response.json()["result"]["text"]
         start_message = "Witaj {}. Jestem WikiBot, zapytaj mnie o jakąś informację z Wikipedii, a dam Ci odpowiedź!"\
-            .format("test")
+            .format("TestUser")
 
         test_content = {
-            'id': secure["TEST_CHAT_ID"],
-            'username': "test"
+            'id': 100,
+            'username': "TestUser"
         }
 
         self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
         self.assertEqual(start_text, start_message)
 
-    def test_user_question_if_bot_know_answer(self):
-        question_text = "Kto to był Adam Mickiewicz?"
-        answer_text = "dowódca wojskowy"
-        Chat(id=secure["TEST_CHAT_ID"], username='test_user').save()
+    def mock_bot_answer_user_question(self, question_text):
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
 
-        _, user_question = self.bi.user_question(_id=secure["TEST_CHAT_ID"], text=question_text)
-        msg_text_1 = json.loads(user_question[0].content)["result"]["text"]
-        msg_text_2 = json.loads(user_question[1].content)["result"]["text"]
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        _, mock_question = self.bi.user_question(_id=100, text=question_text)
+
+        mock_get_patcher.stop()
+
+        msg_text_1 = mock_question[0].json()["result"]["text_1"]
+        msg_text_2 = mock_question[1].json()["result"]["text_2"]
+
+        return msg_text_1, msg_text_2
+
+    def test_user_question_if_bot_know_answer(self):
+        question_text = "Kim był Adam Mickiewicz?"
+        answer_text = "dowódca wojskowy"
+        self.json_data["result"]["text_1"] = "dowódca wojskowy"
+        self.json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
+
+        Chat(id=100, username='test_user').save()
+
+        msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text)
 
         test_content_question = {
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'question_text': question_text
         }
         test_content_answer = {
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'article_id': 293,
             'answer_text': answer_text
         }
@@ -128,24 +155,25 @@ class BotInteractionTests(TestCase):
 
     def test_user_question_if_bot_do_not_know_answer(self):
         question_text = "Kto jest prezydentem Polski?"
-        Chat(id=secure["TEST_CHAT_ID"], username='test_user').save()
+        self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
+        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
-        _, user_question = self.bi.user_question(_id=secure["TEST_CHAT_ID"], text=question_text)
-        msg_text_1 = json.loads(user_question[0].content)["result"]["text"]
-        msg_text_2 = json.loads(user_question[1].content)["result"]["text"]
+        Chat(id=100, username='test_user').save()
+
+        msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text)
 
         test_content_question = {
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'question_text': question_text
         }
         test_content_answer = {
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'article_id': 4681,
             'answer_text': ""
         }
         test_content_check_answer = {
             'question': 1,
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'if_right': False,
         }
 
@@ -159,20 +187,20 @@ class BotInteractionTests(TestCase):
 
     def test_user_question_if_bot_do_not_find_article_to_answer(self):
         question_text = ""
+        self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
+        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
-        Chat(id=secure["TEST_CHAT_ID"], username='test_user').save()
+        Chat(id=100, username='test_user').save()
 
-        _, user_question = self.bi.user_question(_id=secure["TEST_CHAT_ID"], text=question_text)
-        msg_text_1 = json.loads(user_question[0].content)["result"]["text"]
-        msg_text_2 = json.loads(user_question[1].content)["result"]["text"]
+        msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text)
 
         test_content_question = {
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'question_text': question_text
         }
         test_content_check_answer = {
             'question': 1,
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'if_right': False,
         }
 
@@ -183,66 +211,149 @@ class BotInteractionTests(TestCase):
                              test_content_check_answer)
 
     def test_text_if_bot_do_not_know_answer(self):
-        bot_text = self.bi.text_if_bot_do_not_know_answer(_id=secure["TEST_CHAT_ID"])
-        msg_text_1 = json.loads(bot_text[0].content)["result"]["text"]
-        msg_text_2 = json.loads(bot_text[1].content)["result"]["text"]
+        self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
+        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
+
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        bot_text = self.bi.text_if_bot_do_not_know_answer(_id=100)
+
+        mock_get_patcher.stop()
+
+        msg_text_1 = bot_text[0].json()["result"]["text_1"]
+        msg_text_2 = bot_text[1].json()["result"]["text_2"]
+
         self.assertEqual(msg_text_1, "Nie rozumiem Cię :(")
         self.assertEqual(msg_text_2, "Zadaj pytanie w innny sposób ;)")
 
     def test_send_bot_answer(self):
-        bot_answer = self.bi.send_bot_answer(answer='test answer', _id=secure["TEST_CHAT_ID"])
-        msg_text_1 = json.loads(bot_answer[0].content)["result"]["text"]
-        msg_text_2 = json.loads(bot_answer[1].content)["result"]["text"]
+        self.json_data["result"]["text_1"] = "test answer"
+        self.json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
+
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        bot_answer = self.bi.send_bot_answer(answer='test answer', _id=100)
+
+        mock_get_patcher.stop()
+
+        msg_text_1 = bot_answer[0].json()["result"]["text_1"]
+        msg_text_2 = bot_answer[1].json()["result"]["text_2"]
+
         self.assertEqual(msg_text_1, "test answer")
         self.assertEqual(msg_text_2, "Czy odpowiedziałem wyczerpująco na Twoje pytanie?")
 
     def test_check_answer_if_true(self):
+        self.json_data["result"]["text_1"] = 'Super!'
+        self.json_data["result"]["text_2"] = "Zadaj mi jeszcze jakieś pytanie ;)"
+
         outcome = True
-        Chat(id=secure["TEST_CHAT_ID"], username='test_user').save()
-        Question.save_question(chat_id=secure["TEST_CHAT_ID"], question='test_question')
-        check = self.bi.check_answer(outcome=outcome, _id=secure["TEST_CHAT_ID"])
+        Chat(id=100, username='test_user').save()
+        Question.save_question(chat_id=100, question='test_question')
+
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        mock_check = self.bi.check_answer(outcome=outcome, _id=100)
+
+        mock_get_patcher.stop()
 
         test_content = {
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'if_right': outcome,
         }
         self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
                              test_content)
 
-        msg_text_1 = json.loads(check[0].content)["result"]["text"]
-        msg_text_2 = json.loads(check[1].content)["result"]["text"]
+        msg_text_1 = mock_check[0].json()["result"]["text_1"]
+        msg_text_2 = mock_check[1].json()["result"]["text_2"]
         self.assertIn(msg_text_1, custom_messages["output_answers"][outcome])
         self.assertIn(msg_text_2, custom_messages["next_questions"][outcome])
 
     def test_check_answer_if_false(self):
+        self.json_data["result"]["text_1"] = 'Szkoda ;('
+        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
+
         outcome = False
-        Chat(id=secure["TEST_CHAT_ID"], username='test_user').save()
-        Question.save_question(chat_id=secure["TEST_CHAT_ID"], question='test_question')
-        check = self.bi.check_answer(outcome=outcome, _id=secure["TEST_CHAT_ID"])
+        Chat(id=100, username='test_user').save()
+        Question.save_question(chat_id=100, question='test_question')
+
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        mock_check = self.bi.check_answer(outcome=outcome, _id=100)
+
+        mock_get_patcher.stop()
 
         test_content = {
-            'chat': secure["TEST_CHAT_ID"],
+            'chat': 100,
             'if_right': outcome,
         }
         self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
                              test_content)
 
-        msg_text_1 = json.loads(check[0].content)["result"]["text"]
-        msg_text_2 = json.loads(check[1].content)["result"]["text"]
+        msg_text_1 = mock_check[0].json()["result"]["text_1"]
+        msg_text_2 = mock_check[1].json()["result"]["text_2"]
         self.assertIn(msg_text_1, custom_messages["output_answers"][outcome])
         self.assertIn(msg_text_2, custom_messages["next_questions"][outcome])
 
     def test_greet(self):
-        greet = self.bi.greet(_id=secure["TEST_CHAT_ID"])
-        msg_text = json.loads(greet.content)["result"]["text"]
+        self.json_data["result"]["text"] = 'Witaj, w czym mogę Ci pomóc?'
+
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        mock_greet = self.bi.greet(_id=100)
+
+        mock_get_patcher.stop()
+
+        msg_text = mock_greet.json()["result"]["text"]
         self.assertIn(msg_text, custom_messages["greet_answers"]["greet"])
 
     def test_sign_off(self):
-        sign_off = self.bi.sign_off(_id=secure["TEST_CHAT_ID"])
-        msg_text = json.loads(sign_off.content)["result"]["text"]
+        self.json_data["result"]["text"] = 'Do zobaczenia ponownie'
+
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        mock_sign_off = self.bi.sign_off(_id=100)
+
+        mock_get_patcher.stop()
+
+        msg_text = mock_sign_off.json()["result"]["text"]
         self.assertIn(msg_text, custom_messages["sign_off_answers"]["sign_off"])
 
     def test_remind_about_check_answer(self):
-        remind = self.bi.remind_about_check_answer(_id=secure["TEST_CHAT_ID"])
-        msg_text = json.loads(remind.content)["result"]["text"]
+        self.json_data["result"]["text"] = 'Nie powiedziałeś czy dobrze odpowiedzałem'
+
+        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+
+        mock_get = mock_get_patcher.start()
+        mock_get.return_value = Mock(status_code=200)
+        mock_get.return_value.json.return_value = self.json_data
+
+        mock_remind = self.bi.remind_about_check_answer(_id=100)
+
+        mock_get_patcher.stop()
+
+        msg_text = mock_remind.json()["result"]["text"]
         self.assertIn(msg_text, custom_messages["remind_about_check_answer"]["check_answer"])
