@@ -92,7 +92,7 @@ def check_outcome(text):
         return True
     if re.search(r'\bdzie[ńn] dobry\b|\bwitam\b', text):
         return 'greet'
-    if re.search(r'\bwidzenia\b|\bnara\b|\b[żz]egnam\b|\bnie chce\b', text):
+    if re.search(r'\bwidzenia\b|\bnara\b|\bna razie\b|\b[żz]egnam\b|\bnie chce\b', text):
         return 'sign_off'
     if re.search(r'\bcze[śs][ćc]\b|\belo\b|\bsiema\b|\bhej\b', text):
         return 'greet-sign_off'

@@ -3,6 +3,7 @@ qa_models/*
 wiki_bot/migrations/*
 db.sqlite3
 */__pycache__
+*/*/__pycache__
 __pycache__/*
 ngrok_setWebhook.txt
 secure.json
