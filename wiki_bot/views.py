@@ -2,7 +2,7 @@ from django.views import View
 from django.http import JsonResponse
 
 from .bot_interactions import BotInteraction
-from .models import State, Greeting
+from .models import Chat, State, Greeting
 from .search import check_outcome
 
 
@@ -11,7 +11,9 @@ class BotInteractionView(BotInteraction, View):
         receive_message = self.request_message(request)
         receive_chat_id, receive_chat_username = self.get_user_data_from_message(receive_message)
         receive_text = self.get_text_from_message(receive_message)
-        print(receive_text)
+        print("receive_text: ", receive_text)
+
+        Chat.add_user_data_to_db(chat_id=receive_chat_id, username=receive_chat_username)
 
         state = State()
         greeting = Greeting()
@@ -31,28 +33,28 @@ class BotInteractionView(BotInteraction, View):
         elif last_state == 'question':
             outcome = check_outcome(receive_text)
             if outcome == 'greet':
-                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+                self.check_outcome_for_greeting(_id=receive_chat_id, last_greeting=last_greeting, outcome=outcome)
             elif outcome == 'sign_off':
-                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+                self.check_outcome_for_greeting(_id=receive_chat_id, last_greeting=last_greeting, outcome=outcome)
             elif outcome == 'greet-sign_off':
-                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+                self.check_outcome_for_greeting(_id=receive_chat_id, last_greeting=last_greeting, outcome=outcome)
             else:
-                check_answer, _ = self.user_question(receive_chat_id, receive_text)
+                check_answer, _ = self.user_question(_id=receive_chat_id, text=receive_text)
                 if check_answer:
                     state.change_state(receive_chat_id, state='check_answer')
 
         elif last_state == 'check_answer':
             outcome = check_outcome(receive_text)
             if outcome is True or outcome is False:
-                self.check_outcome_for_feedback(receive_chat_id, outcome)
+                self.check_outcome_for_feedback(_id=receive_chat_id, outcome=outcome)
             elif outcome == 'greet':
-                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+                self.check_outcome_for_greeting(_id=receive_chat_id, last_greeting=last_greeting, outcome=outcome)
             elif outcome == 'sign_off':
-                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+                self.check_outcome_for_greeting(_id=receive_chat_id, last_greeting=last_greeting, outcome=outcome)
             elif outcome == 'greet-sign_off':
-                self.check_outcome_for_greeting(receive_chat_id, last_greeting, outcome)
+                self.check_outcome_for_greeting(_id=receive_chat_id, last_greeting=last_greeting, outcome=outcome)
             else:
-                self.remind_about_check_answer(receive_chat_id)
+                self.remind_about_check_answer(_id=receive_chat_id)
 
         return JsonResponse({"ok": "POST request processed"})
 

@@ -5,8 +5,6 @@ from ..bot_interactions import BotInteraction
 from ..models import Chat, Question, Answer, CheckAnswer
 from ..custom_message import custom_messages
 
-import json
-
 
 # Create your tests here.
 

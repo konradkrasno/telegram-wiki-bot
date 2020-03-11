@@ -4,12 +4,12 @@ import json
 from django.http import JsonResponse
 
 
-from .models import Chat, Question, Answer, CheckAnswer
+from .models import Question, Answer, CheckAnswer
 from .bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
 from . import custom_message, search
 
-# from deeppavlov import build_model, configs
-# model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
+from deeppavlov import build_model, configs
+model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
 
 
 class BotInteraction:
@@ -48,8 +48,6 @@ class BotInteraction:
         return None
 
     def start_chat(self, _id, username):
-        Chat.add_user_data_to_db(chat_id=_id, username=username)
-
         message_text = "Witaj {}. Jestem WikiBot, zapytaj mnie o jakąś informację z Wikipedii, a dam Ci odpowiedź!"\
             .format(username)
 
@@ -58,13 +56,10 @@ class BotInteraction:
     def user_question(self, _id, text):
         Question.save_question(_id, text)
 
-        # context, article_id = search.search_text(text)
-        context = 'blabla'
-        article_id = 100
+        context, article_id = search.search_text(text)
 
         if context:
-            # answer_text = model_qa_ml([context], [text])[0][0]
-            answer_text = 'blabla'
+            answer_text = model_qa_ml([context], [text])[0][0]
             print("Answer: ", answer_text)
 
             Answer.save_answer(_id, article_id, context, answer_text)
