@@ -122,8 +122,8 @@ class BotInteractionTests(TestCase):
 
     def test_user_question_if_bot_know_answer(self):
         question_text = "Kim był Adam Mickiewicz?"
-        answer_text = ""
-        self.json_data["result"]["text_1"] = ""
+        answer_text = "poeta przeobrażeń"
+        self.json_data["result"]["text_1"] = "poeta przeobrażeń"
         self.json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
 
         Chat(id=100, username='test_user').save()
@@ -146,7 +146,7 @@ class BotInteractionTests(TestCase):
         self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0], test_content_answer)
 
     def test_user_question_if_bot_do_not_know_answer(self):
-        question_text = "Kto jest prezydentem Polski?"
+        question_text = "kto to był kukuczka?"
         self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
         self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
@@ -177,7 +177,7 @@ class BotInteractionTests(TestCase):
                              test_content_check_answer)
 
     def test_user_question_if_bot_do_not_find_article_to_answer(self):
-        question_text = ""
+        question_text = "blabla"
         self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
         self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
