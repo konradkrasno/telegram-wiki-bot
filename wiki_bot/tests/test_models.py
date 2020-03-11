@@ -56,11 +56,10 @@ class CheckAnswerModelTests(TestCase):
 
         CheckAnswer.save_check_answer(chat_id=100, if_right=False)
         test_content = {
-            'question': 2,
             'chat': 100,
             'if_right': False,
         }
-        self.assertDictEqual(CheckAnswer.objects.values('question', 'chat', 'if_right')[0],
+        self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
                              test_content)
 
 

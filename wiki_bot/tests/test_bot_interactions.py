@@ -102,12 +102,6 @@ class BotInteractionTests(TestCase):
         start_message = "Witaj {}. Jestem WikiBot, zapytaj mnie o jakąś informację z Wikipedii, a dam Ci odpowiedź!"\
             .format("TestUser")
 
-        test_content = {
-            'id': 100,
-            'username': "TestUser"
-        }
-
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
         self.assertEqual(start_text, start_message)
 
     def mock_bot_answer_user_question(self, question_text):
@@ -128,8 +122,8 @@ class BotInteractionTests(TestCase):
 
     def test_user_question_if_bot_know_answer(self):
         question_text = "Kim był Adam Mickiewicz?"
-        answer_text = "dowódca wojskowy"
-        self.json_data["result"]["text_1"] = "dowódca wojskowy"
+        answer_text = ""
+        self.json_data["result"]["text_1"] = ""
         self.json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
 
         Chat(id=100, username='test_user').save()
@@ -170,7 +164,6 @@ class BotInteractionTests(TestCase):
             'answer_text': ""
         }
         test_content_check_answer = {
-            'question': 1,
             'chat': 100,
             'if_right': False,
         }
@@ -180,7 +173,7 @@ class BotInteractionTests(TestCase):
         self.assertDictEqual(Question.objects.values('chat', 'question_text')[0], test_content_question)
         self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0],
                              test_content_answer)
-        self.assertDictEqual(CheckAnswer.objects.values('question', 'chat', 'if_right')[0],
+        self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
                              test_content_check_answer)
 
     def test_user_question_if_bot_do_not_find_article_to_answer(self):
@@ -197,7 +190,6 @@ class BotInteractionTests(TestCase):
             'question_text': question_text
         }
         test_content_check_answer = {
-            'question': 1,
             'chat': 100,
             'if_right': False,
         }
@@ -205,7 +197,7 @@ class BotInteractionTests(TestCase):
         self.assertEqual(msg_text_1, "Nie rozumiem Cię :(")
         self.assertEqual(msg_text_2, "Zadaj pytanie w innny sposób ;)")
         self.assertDictEqual(Question.objects.values('chat', 'question_text')[0], test_content_question)
-        self.assertDictEqual(CheckAnswer.objects.values('question', 'chat', 'if_right')[0],
+        self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
                              test_content_check_answer)
 
     def test_text_if_bot_do_not_know_answer(self):
