@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from .models import Question, Answer, CheckAnswer
 from .bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
 from . import custom_message, search
+from .qa_models import qaClass
 
 from deeppavlov import build_model, configs
 model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
@@ -59,7 +60,9 @@ class BotInteraction:
         context, article_id = search.search_text(text)
 
         if context:
-            answer_text = model_qa_ml([context], [text])[0][0]
+            # answer_text = model_qa_ml([context], [text])[0][0]
+            answer_text = qaClass.get_answer_from_text(text=context, question=text)
+
             print("Answer: ", answer_text)
 
             Answer.save_answer(_id, article_id, context, answer_text)
