@@ -4,13 +4,14 @@ import json
 from django.http import JsonResponse
 
 
-from .models import Question, Answer, CheckAnswer
-from .bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
-from . import custom_message, search
-from .qa_models import qaClass
+from wiki_bot.models import Question, Answer, CheckAnswer
+from wiki_bot.bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
+# from wiki_bot import custom_message, search
+# from wiki_bot.qa_models import qaClass
+from wiki_bot import custom_message
 
-from deeppavlov import build_model, configs
-model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
+# from deeppavlov import build_model, configs
+# model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
 
 
 class BotInteraction:
@@ -57,11 +58,13 @@ class BotInteraction:
     def user_question(self, _id, text):
         Question.save_question(_id, text)
 
-        context, article_id = search.search_text(text)
+        # context, article_id = search.search_text(text)
+        context, article_id = 'context text', 100
 
         if context:
             # answer_text = model_qa_ml([context], [text])[0][0]
-            answer_text = qaClass.get_answer_from_text(text=context, question=text)
+            # answer_text = qaClass.get_answer_from_text(text=context, question=text)
+            answer_text = 'This is answer text'
 
             print("Answer: ", answer_text)
 
@@ -86,7 +89,7 @@ class BotInteraction:
         return (self.send_message(answer, _id),
                 self.send_message("Czy odpowiedziałem wyczerpująco na Twoje pytanie?", _id))
 
-    def check_answer(self, outcome, _id):
+    def check_user_answer(self, outcome, _id):
         CheckAnswer.save_check_answer(_id, outcome)
 
         return (self.send_message(custom_message.prepare_custom_message('output_answers', outcome), _id),

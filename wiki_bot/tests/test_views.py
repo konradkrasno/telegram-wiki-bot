@@ -2,10 +2,10 @@ from django.test import TestCase, RequestFactory
 
 from unittest.mock import patch
 
-from ..views import BotInteractionView
-from ..bot_interactions import BotInteraction
-from ..models import Chat, Question, State, Greeting
-from .test_data import (data,
+from wiki_bot.views import BotInteractionView
+from wiki_bot.bot_interactions import BotInteraction
+from wiki_bot.models import Chat, Question, State, Greeting
+from wiki_bot.tests.test_data import (data,
                         data_if_start,
                         data_if_question_and_greet,
                         data_if_question_and_greet_sign_off,
@@ -278,18 +278,18 @@ class BotInteractionViewTests(TestCase):
         self.assertEqual(State.get_last_state(chat_id=100), 'check_answer')
         mock_check_outcome_for_greeting.assert_called_with(_id=100, last_greeting='first_greet', outcome='greet')
 
-    @patch.object(BotInteraction, 'check_answer')
-    def test_check_outcome_for_feedback(self, mock_check_answer):
+    @patch.object(BotInteraction, 'check_user_answer')
+    def test_check_outcome_for_feedback(self, mock_check_user_answer):
         Chat(id=100, username='test_user').save()
         Question.save_question(chat_id=100, question='test_question')
         State.get_last_state(chat_id=100)
 
         self.biv.check_outcome_for_feedback(_id=100, outcome=True)
-        mock_check_answer.assert_called_with(True, 100)
+        mock_check_user_answer.assert_called_with(True, 100)
         self.assertEqual(State.get_last_state(chat_id=100), 'question')
 
         self.biv.check_outcome_for_feedback(_id=100, outcome=False)
-        mock_check_answer.assert_called_with(False, 100)
+        mock_check_user_answer.assert_called_with(False, 100)
         self.assertEqual(State.get_last_state(chat_id=100), 'question')
 
     @patch.object(BotInteraction, 'sign_off')

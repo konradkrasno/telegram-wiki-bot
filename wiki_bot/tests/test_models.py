@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from ..models import Chat, Question, Answer, CheckAnswer, State, Greeting
+from wiki_bot.models import Chat, Question, Answer, CheckAnswer, State, Greeting
 
 # Create your tests here.
 
