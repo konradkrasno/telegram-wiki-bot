@@ -120,6 +120,7 @@ class BotInteractionTests(TestCase):
 
         return msg_text_1, msg_text_2
 
+    # TODO mock context variable in user_question method to test answer
     # def test_user_question_if_bot_know_answer(self):
     #     question_text = "Kim był Adam Mickiewicz?"
     #     answer_text = "poeta przeobrażeń"
@@ -145,6 +146,7 @@ class BotInteractionTests(TestCase):
     #     self.assertDictEqual(Question.objects.values('chat', 'question_text')[0], test_content_question)
     #     self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0], test_content_answer)
 
+    # TODO mock context variable in user_question method to empty string
     # def test_user_question_if_bot_do_not_know_answer(self):
     #     question_text = "kto to był kukuczka?"
     #     self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
@@ -177,6 +179,8 @@ class BotInteractionTests(TestCase):
     #                          test_content_check_answer)
 
     def test_user_question_if_bot_do_not_find_article_to_answer(self):
+        # TODO mock context variable in user_question method to None
+
         question_text = "test question"
         self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
         self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
