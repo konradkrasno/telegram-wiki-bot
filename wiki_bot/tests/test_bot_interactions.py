@@ -105,16 +105,19 @@ class BotInteractionTests(TestCase):
         self.assertEqual(start_text, start_message)
 
     def mock_bot_answer_user_question(self, question_text):
-        mock_get_patcher = patch('wiki_bot.bot_interactions.search_text')
+        mock_post_patcher = patch('wiki_bot.bot_interactions.requests.post')
+        mock_search_text_patcher = patch('wiki_bot.bot_interactions.search_text')
 
-        mock_get = mock_get_patcher.start()
-        # mock_get.return_value = Mock(status_code=200)
-        # mock_get.return_value.json.return_value = self.json_data
-        mock_get.return_value = Mock(side_effect=(100, None))
+        mock_post = mock_post_patcher.start()
+        mock_post.return_value = Mock(status_code=200)
+        mock_post.return_value.json.return_value = self.json_data
+        mock_search_text = mock_search_text_patcher.start()
+        mock_search_text.return_value = None, 100
 
         _, mock_question = self.bi.bot_answer(_id=100, text=question_text)
 
-        mock_get_patcher.stop()
+        mock_search_text_patcher.stop()
+        mock_post_patcher.stop()
 
         msg_text_1 = mock_question[0].json()["result"]["text_1"]
         msg_text_2 = mock_question[1].json()["result"]["text_2"]
