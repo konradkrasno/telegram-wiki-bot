@@ -58,7 +58,7 @@ class BotInteractionView(BotInteraction, View):
         elif outcome == 'greet-sign_off':
             self.check_outcome_for_greeting(_id=receive_chat_id, last_greeting=last_greeting, outcome=outcome)
         else:
-            check_answer, _ = self.user_question(_id=receive_chat_id, text=receive_text)
+            check_answer, _ = self.bot_answer(_id=receive_chat_id, text=receive_text)
             if check_answer:
                 state.change_state(receive_chat_id, state='check_answer')
 

@@ -3,6 +3,6 @@ requests==2.22.0
 elasticsearch-dsl==7.1.0
 flashtext==2.7
 deeppavlov==0.7.1
-psycopg2==2.8.4
 simpletransformers==0.20.3
 torch==1.4.0
+psycopg2==2.8.4

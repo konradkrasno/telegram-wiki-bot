@@ -11,10 +11,10 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
-import json
+# import json
 
-with open('secure.json', 'r') as file:
-    secure = json.load(file)
+# with open('secure.json', 'r') as file:
+#     secure = json.load(file)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -80,14 +80,21 @@ WSGI_APPLICATION = 'telegram_wiki_bot.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': secure['NAME'],
-        'USER': secure['USER'],
-        'PASSWORD': secure['PASSWORD'],
-        'HOST': 'localhost',
-        'PORT': '5432'
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'database',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': secure['NAME'],
+#         'USER': secure['USER'],
+#         'PASSWORD': secure['PASSWORD'],
+#         'HOST': 'localhost',
+#         'PORT': '5432'
+#     }
+# }
 
 
 # Password validation

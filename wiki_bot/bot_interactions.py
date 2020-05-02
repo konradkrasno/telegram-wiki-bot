@@ -13,22 +13,25 @@ from wiki_bot import custom_message
 # from deeppavlov import build_model, configs
 # model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
 
+def search_text():
+    return 'context text', 100
+
 
 class BotInteraction:
-    @classmethod
-    def request_message(cls, request):
+    @staticmethod
+    def request_message(request):
         data = json.loads(request.body)
         message = data["message"]
         return message
 
-    @classmethod
-    def get_user_data_from_message(cls, message):
+    @staticmethod
+    def get_user_data_from_message(message):
         _id = message["chat"]["id"]
         username = message["chat"]["first_name"]
         return _id, username
 
-    @classmethod
-    def get_text_from_message(cls, message):
+    @staticmethod
+    def get_text_from_message(message):
         try:
             text = message["text"].strip().lower()
         except Exception as e:
@@ -36,8 +39,8 @@ class BotInteraction:
             return JsonResponse({"ok": "POST request processed"})
         return text
 
-    @classmethod
-    def send_message(cls, message, chat_id):
+    @staticmethod
+    def send_message(message, chat_id):
         data = {
             "chat_id": chat_id,
             "text": message,
@@ -55,11 +58,15 @@ class BotInteraction:
 
         return self.send_message(message=message_text, chat_id=_id)
 
-    def user_question(self, _id, text):
+    @staticmethod
+    def get_answer(_id, text):
         Question.save_question(_id, text)
-
         # context, article_id = search.search_text(text)
-        context, article_id = 'context text', 100
+        context, article_id = search_text()
+        return article_id, context
+
+    def bot_answer(self, _id, text):
+        article_id, context = self.get_answer(_id, text)
 
         if context:
             # answer_text = model_qa_ml([context], [text])[0][0]

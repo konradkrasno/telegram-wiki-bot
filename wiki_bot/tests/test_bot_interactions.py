@@ -105,13 +105,14 @@ class BotInteractionTests(TestCase):
         self.assertEqual(start_text, start_message)
 
     def mock_bot_answer_user_question(self, question_text):
-        mock_get_patcher = patch('wiki_bot.bot_interactions.requests.post')
+        mock_get_patcher = patch('wiki_bot.bot_interactions.search_text')
 
         mock_get = mock_get_patcher.start()
-        mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        # mock_get.return_value = Mock(status_code=200)
+        # mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value = Mock(side_effect=(100, None))
 
-        _, mock_question = self.bi.user_question(_id=100, text=question_text)
+        _, mock_question = self.bi.bot_answer(_id=100, text=question_text)
 
         mock_get_patcher.stop()
 
@@ -121,7 +122,7 @@ class BotInteractionTests(TestCase):
         return msg_text_1, msg_text_2
 
     # TODO mock context variable in user_question method to test answer
-    # def test_user_question_if_bot_know_answer(self):
+    # def test_bot_answer_if_bot_know_answer(self):
     #     question_text = "Kim był Adam Mickiewicz?"
     #     answer_text = "poeta przeobrażeń"
     #     self.json_data["result"]["text_1"] = "poeta przeobrażeń"
@@ -147,7 +148,7 @@ class BotInteractionTests(TestCase):
     #     self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0], test_content_answer)
 
     # TODO mock context variable in user_question method to empty string
-    # def test_user_question_if_bot_do_not_know_answer(self):
+    # def test_bot_answer_if_bot_do_not_know_answer(self):
     #     question_text = "kto to był kukuczka?"
     #     self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
     #     self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
@@ -178,7 +179,7 @@ class BotInteractionTests(TestCase):
     #     self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
     #                          test_content_check_answer)
 
-    def test_user_question_if_bot_do_not_find_article_to_answer(self):
+    def test_bot_answer_if_bot_do_not_find_article_to_answer(self):
         # TODO mock context variable in user_question method to None
 
         question_text = "test question"
