@@ -14,6 +14,22 @@ from wiki_bot import custom_message
 # model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
 
 
+def first_model(context, text):
+    pass
+    # return model_qa_ml([context], [text])[0][0]
+
+
+def second_model(context, text):
+    pass
+    # return qaClass.get_answer_from_text(text=context, question=text)
+
+
+choose_model = {
+    'first': first_model,
+    'second': second_model
+}
+
+
 class BotInteraction:
     @staticmethod
     def request_message(request):
@@ -65,9 +81,7 @@ class BotInteraction:
         article_id, context = self.get_answer(_id, text)
 
         if context:
-            # answer_text = model_qa_ml([context], [text])[0][0]
-            # answer_text = qaClass.get_answer_from_text(text=context, question=text)
-            answer_text = 'This is answer text'
+            answer_text = choose_model['second'](context, text)
 
             print("Answer: ", answer_text)
 
