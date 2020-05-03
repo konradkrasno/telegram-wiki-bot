@@ -6,15 +6,12 @@ from django.http import JsonResponse
 
 from wiki_bot.models import Question, Answer, CheckAnswer
 from wiki_bot.bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
-# from wiki_bot import custom_message, search
+from wiki_bot import custom_message, search
 # from wiki_bot.qa_models import qaClass
 from wiki_bot import custom_message
 
 # from deeppavlov import build_model, configs
 # model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
-
-def search_text():
-    return 'context text', 100
 
 
 class BotInteraction:
@@ -61,8 +58,7 @@ class BotInteraction:
     @staticmethod
     def get_answer(_id, text):
         Question.save_question(_id, text)
-        # context, article_id = search.search_text(text)
-        context, article_id = search_text()
+        context, article_id = search.search_text(text)
         return article_id, context
 
     def bot_answer(self, _id, text):

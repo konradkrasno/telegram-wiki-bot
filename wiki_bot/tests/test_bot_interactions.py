@@ -104,15 +104,15 @@ class BotInteractionTests(TestCase):
 
         self.assertEqual(start_text, start_message)
 
-    def mock_bot_answer_user_question(self, question_text):
+    def mock_bot_answer_user_question(self, question_text, answer_text, article_id):
         mock_post_patcher = patch('wiki_bot.bot_interactions.requests.post')
-        mock_search_text_patcher = patch('wiki_bot.bot_interactions.search_text')
+        mock_search_text_patcher = patch('wiki_bot.bot_interactions.search.search_text')
 
         mock_post = mock_post_patcher.start()
         mock_post.return_value = Mock(status_code=200)
         mock_post.return_value.json.return_value = self.json_data
         mock_search_text = mock_search_text_patcher.start()
-        mock_search_text.return_value = None, 100
+        mock_search_text.return_value = answer_text, article_id
 
         _, mock_question = self.bi.bot_answer(_id=100, text=question_text)
 
@@ -124,74 +124,77 @@ class BotInteractionTests(TestCase):
 
         return msg_text_1, msg_text_2
 
-    # TODO mock context variable in user_question method to test answer
-    # def test_bot_answer_if_bot_know_answer(self):
-    #     question_text = "Kim był Adam Mickiewicz?"
-    #     answer_text = "poeta przeobrażeń"
-    #     self.json_data["result"]["text_1"] = "poeta przeobrażeń"
-    #     self.json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
-    #
-    #     Chat(id=100, username='test_user').save()
-    #
-    #     msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text)
-    #
-    #     test_content_question = {
-    #         'chat': 100,
-    #         'question_text': question_text
-    #     }
-    #     test_content_answer = {
-    #         'chat': 100,
-    #         'article_id': 293,
-    #         'answer_text': answer_text
-    #     }
-    #
-    #     self.assertEqual(msg_text_1, answer_text)
-    #     self.assertEqual(msg_text_2, "Czy odpowiedziałem wyczerpująco na Twoje pytanie?")
-    #     self.assertDictEqual(Question.objects.values('chat', 'question_text')[0], test_content_question)
-    #     self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0], test_content_answer)
+    def test_bot_answer_if_bot_know_answer(self):
+        question_text = "This is question text"
+        answer_text = "This is answer text"
+        self.json_data["result"]["text_1"] = "This is answer text"
+        self.json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
+
+        Chat(id=100, username='test_user').save()
+
+        msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text,
+                                                                    answer_text=answer_text,
+                                                                    article_id=100)
+
+        test_content_question = {
+            'chat': 100,
+            'question_text': question_text
+        }
+        test_content_answer = {
+            'chat': 100,
+            'article_id': 100,
+            'answer_text': answer_text
+        }
+
+        self.assertEqual(msg_text_1, answer_text)
+        self.assertEqual(msg_text_2, "Czy odpowiedziałem wyczerpująco na Twoje pytanie?")
+        self.assertDictEqual(Question.objects.values('chat', 'question_text')[0], test_content_question)
+        self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0], test_content_answer)
 
     # TODO mock context variable in user_question method to empty string
-    # def test_bot_answer_if_bot_do_not_know_answer(self):
-    #     question_text = "kto to był kukuczka?"
-    #     self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
-    #     self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
-    #
-    #     Chat(id=100, username='test_user').save()
-    #
-    #     msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text)
-    #
-    #     test_content_question = {
-    #         'chat': 100,
-    #         'question_text': question_text
-    #     }
-    #     test_content_answer = {
-    #         'chat': 100,
-    #         'article_id': 4681,
-    #         'answer_text': ""
-    #     }
-    #     test_content_check_answer = {
-    #         'chat': 100,
-    #         'if_right': False,
-    #     }
-    #
-    #     self.assertEqual(msg_text_1, "Nie rozumiem Cię :(")
-    #     self.assertEqual(msg_text_2, "Zadaj pytanie w innny sposób ;)")
-    #     self.assertDictEqual(Question.objects.values('chat', 'question_text')[0], test_content_question)
-    #     self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0],
-    #                          test_content_answer)
-    #     self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
-    #                          test_content_check_answer)
+    def test_bot_answer_if_bot_do_not_know_answer(self):
+        question_text = "This is question text"
+        self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
+        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
+
+        Chat(id=100, username='test_user').save()
+
+        msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text,
+                                                                    answer_text="",
+                                                                    article_id=100)
+
+        test_content_question = {
+            'chat': 100,
+            'question_text': question_text
+        }
+        test_content_answer = {
+            'chat': 100,
+            'article_id': 100,
+            'answer_text': ""
+        }
+        test_content_check_answer = {
+            'chat': 100,
+            'if_right': False,
+        }
+
+        self.assertEqual(msg_text_1, "Nie rozumiem Cię :(")
+        self.assertEqual(msg_text_2, "Zadaj pytanie w innny sposób ;)")
+        self.assertDictEqual(Question.objects.values('chat', 'question_text')[0], test_content_question)
+        self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0],
+                             test_content_answer)
+        self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
+                             test_content_check_answer)
 
     def test_bot_answer_if_bot_do_not_find_article_to_answer(self):
-        # TODO mock context variable in user_question method to None
-
         question_text = "test question"
         self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
         self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
         Chat(id=100, username='test_user').save()
 
-        msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text)
+        msg_text_1, msg_text_2 = self.mock_bot_answer_user_question(question_text=question_text,
+                                                                    answer_text=None,
+                                                                    article_id=100)
 
         test_content_question = {
             'chat': 100,

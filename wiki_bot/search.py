@@ -70,7 +70,8 @@ import re
 #     return res
 #
 #
-# def search_text(query):
+def search_text(query):
+    pass
 #     _id = get_ids(query)
 #     if _id:
 #         _id = _id['elasticid']
