@@ -7,27 +7,7 @@ from django.http import JsonResponse
 from wiki_bot.models import Question, Answer, CheckAnswer
 from wiki_bot.bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
 from wiki_bot import custom_message, search
-# from wiki_bot.qa_models import qaClass
-from wiki_bot import custom_message
-
-# from deeppavlov import build_model, configs
-# model_qa_ml = build_model(configs.squad.squad_bert_multilingual_freezed_emb, download=False)
-
-
-def first_model(context, text):
-    pass
-    # return model_qa_ml([context], [text])[0][0]
-
-
-def second_model(context, text):
-    pass
-    # return qaClass.get_answer_from_text(text=context, question=text)
-
-
-choose_model = {
-    'first': first_model,
-    'second': second_model
-}
+from wiki_bot.model_handling import choose_model
 
 
 class BotInteraction:
@@ -72,13 +52,13 @@ class BotInteraction:
         return self.send_message(message=message_text, chat_id=_id)
 
     @staticmethod
-    def get_answer(_id, text):
+    def get_article(_id, text):
         Question.save_question(_id, text)
         context, article_id = search.search_text(text)
         return article_id, context
 
     def bot_answer(self, _id, text):
-        article_id, context = self.get_answer(_id, text)
+        article_id, context = self.get_article(_id, text)
 
         if context:
             answer_text = choose_model['second'](context, text)

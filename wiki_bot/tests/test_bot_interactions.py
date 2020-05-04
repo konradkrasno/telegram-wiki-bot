@@ -105,9 +105,13 @@ class BotInteractionTests(TestCase):
         self.assertEqual(start_text, start_message)
 
     def mock_context_and_answer(self, question_text, mock_context, mock_article_id, mock_answer_text):
+        def fake_model(context, text):
+            return mock_answer_text
+
         mock_post_patcher = patch('wiki_bot.bot_interactions.requests.post')
         mock_search_text_patcher = patch('wiki_bot.bot_interactions.search.search_text')
-        mock_second_model_patcher = patch('wiki_bot.bot_interactions.second_model')
+        mock_choose_model_patcher = patch.dict('wiki_bot.bot_interactions.choose_model',
+                                               {'first': fake_model, 'second': fake_model})
 
         mock_post = mock_post_patcher.start()
         mock_post.return_value = Mock(status_code=200)
@@ -116,12 +120,11 @@ class BotInteractionTests(TestCase):
         mock_search_text = mock_search_text_patcher.start()
         mock_search_text.return_value = mock_context, mock_article_id
 
-        mock_second_model = mock_second_model_patcher.start()
-        mock_second_model.return_value = mock_answer_text
+        mock_choose_model = mock_choose_model_patcher.start()
 
         _, mock_question = self.bi.bot_answer(_id=100, text=question_text)
 
-        mock_second_model_patcher.stop()
+        mock_choose_model_patcher.stop()
         mock_search_text_patcher.stop()
         mock_post_patcher.stop()
 
@@ -130,7 +133,6 @@ class BotInteractionTests(TestCase):
 
         return msg_text_1, msg_text_2
 
-    # TODO mock context variable in user_question method to test answer
     def test_bot_answer_if_bot_know_answer(self):
         context_text = "This is context text"
         question_text = "This is question text"
@@ -160,7 +162,6 @@ class BotInteractionTests(TestCase):
         self.assertDictEqual(Question.objects.values('chat', 'question_text')[0], test_content_question)
         self.assertDictEqual(Answer.objects.values('chat', 'article_id', 'answer_text')[0], test_content_answer)
 
-    # TODO mock context variable in user_question method to empty string
     def test_bot_answer_if_bot_do_not_know_answer(self):
         context_text = "This is context text"
         question_text = "This is question text"
