@@ -77,6 +77,16 @@ class BotInteractionViewTests(TestCase):
                                         mock_method.assert_called_with()
 
                                 except TypeError:
+                                    with patch.object(BotInteraction, 'get_text_from_message', return_value=text) as mock_received_text:
+                                        with patch.object(BotInteraction, 'check_outcome', return_value=text) as mock_outcome:
+                                            request = self.factory.post('/wiki_bot', self.fake_data(text),
+                                                                        content_type='application/json')
+                                            biv = BotInteractionView()
+                                            biv.post(request)
+
+                                            mock_received_text.assert_called()
+                                            mock_outcome.assert_called()
+
                                     exception = "Method for ({}), ({}), ({}) doesn't exist".format(state, greeting, text)
                                     exceptions.append(exception)
 

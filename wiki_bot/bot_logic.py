@@ -1,3 +1,4 @@
+import re
 import requests
 
 import json
@@ -8,10 +9,23 @@ from wiki_bot.models import Chat, Question, Answer, AnswerFeedback, State, Greet
 from wiki_bot.bot_settings import TELEGRAM_URL, WIKI_BOT_TOKEN
 from wiki_bot import custom_message, search
 from wiki_bot.model_handling import choose_model
-from wiki_bot.search import check_outcome
 
 
 class BotInteraction:
+
+    @staticmethod
+    def check_outcome(text):
+        if re.search(r'\bnie\b|\bno\b|\b[ź|z]le\b|\bz[łl]a\b', text):
+            return 'negative_answer_feedback_outcome'
+        if re.search(r'\btak\b|\bdobrze\b|\bdobra\b|\bgood\b', text):
+            return 'positive_answer_feedback_outcome'
+        if re.search(r'\bdzie[ńn] dobry\b|\bwitam\b', text):
+            return 'greet_outcome'
+        if re.search(r'\bwidzenia\b|\bnara\b|\bna razie\b|\b[żz]egnam\b|\bnie chce\b', text):
+            return 'sign_off_outcome'
+        if re.search(r'\bcze[śs][ćc]\b|\belo\b|\bsiema\b|\bhej\b', text):
+            return 'greet_or_sign_off_outcome'
+        return 'question_outcome'
 
     @staticmethod
     def request_message(request):
@@ -121,7 +135,7 @@ class BotLogicHandling(BotInteraction):
         self.last_state = self._state.get_last_state(self.received_chat_id)
         self.last_greeting = self._greeting.get_last_greeting(self.received_chat_id)
 
-        self.outcome = check_outcome(self.received_text)
+        self.outcome = self.check_outcome(self.received_text)
 
     def __repr__(self):
         return """{0}(request={1})
@@ -134,7 +148,8 @@ class BotLogicHandling(BotInteraction):
             self.received_text,
             self.received_chat_id,
             self.last_state,
-            self.last_greeting)
+            self.last_greeting
+        )
 
     @property
     def outcome_options(self):
