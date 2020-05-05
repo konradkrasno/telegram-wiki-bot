@@ -21,7 +21,7 @@ class BotInteractionView(View):
             try:
                 status = blh.bot_status['after_start'][blh.last_state][blh.last_greeting][blh.outcome]
             except KeyError as e:
-                print(e)
+                print("KeyError: {}".format(e))
             else:
                 status()
 

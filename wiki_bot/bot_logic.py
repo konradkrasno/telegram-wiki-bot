@@ -30,7 +30,7 @@ class BotInteraction:
         try:
             text = message["text"].strip().lower()
         except Exception as e:
-            print(e)
+            print("Error: {}".format(e))
             return JsonResponse({"ok": "POST request processed"})
         return text
 
@@ -159,23 +159,23 @@ class BotLogicHandling(BotInteraction):
             },
             'answer_feedback': {
                 'first_greet': {
-                    'positive_answer_feedback_outcome': self.save_feedback_and_change_state_to_question,
-                    'negative_answer_feedback_outcome': self.save_feedback_and_change_state_to_question,
+                    'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
+                    'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
                     'greet_outcome': self.change_first_greet_status_to_greet,
                     'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off,
                     'sign_off_outcome': self.change_greet_status_to_sign_off,
                     'question_outcome': self.remind_about_answer_feedback
                 },
                 'greet': {
-                    'positive_answer_feedback_outcome': self.save_feedback_and_change_state_to_question,
-                    'negative_answer_feedback_outcome': self.save_feedback_and_change_state_to_question,
+                    'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
+                    'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
                     'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off_and_change_state_status_to_question,
                     'sign_off_outcome': self.change_greet_status_to_sign_off_and_change_state_status_to_question,
                     'question_outcome': self.remind_about_answer_feedback
                 },
                 'sign_off': {
-                    'positive_answer_feedback_outcome': self.save_feedback_and_change_state_to_question,
-                    'negative_answer_feedback_outcome': self.save_feedback_and_change_state_to_question,
+                    'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
+                    'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
                     'greet_outcome': self.change_sign_off_status_to_greet_and_change_state_status_to_question,
                     'greet_or_sign_off_outcome': self.change_sign_off_status_to_greet_and_change_state_status_to_question,
                     'question_outcome': self.remind_about_answer_feedback
@@ -197,16 +197,13 @@ class BotLogicHandling(BotInteraction):
         self._greeting.change_greeting(chat_id=self.received_chat_id, greeting='first_greet')
         self.start_message(chat_id=self.received_chat_id, username=self.received_chat_username)
 
-    def save_feedback_and_change_state_to_question(self):
-        choose_feedback = {
-            'negative_answer_feedback_outcome': False,
-            'positive_answer_feedback_outcome': True
-        }
-
-        feedback = choose_feedback[self.outcome]
-
+    def save_positive_feedback_and_change_state_to_question(self):
         self._state.change_state(chat_id=self.received_chat_id, state='question')
-        self.save_answer_feedback_and_send_message(feedback=feedback, chat_id=self.received_chat_id)
+        self.save_answer_feedback_and_send_message(feedback=True, chat_id=self.received_chat_id)
+
+    def save_negative_feedback_and_change_state_to_question(self):
+        self._state.change_state(chat_id=self.received_chat_id, state='question')
+        self.save_answer_feedback_and_send_message(feedback=False, chat_id=self.received_chat_id)
 
     def change_sign_off_status_to_greet_and_change_state_status_to_question(self):
         self._greeting.change_greeting(chat_id=self.received_chat_id, greeting='greet')
