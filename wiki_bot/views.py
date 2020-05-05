@@ -8,6 +8,7 @@ class BotInteractionView(View):
 
     def post(self, request):
         blh = BotLogicHandling(request)
+        print(blh)
 
         if blh.received_text.startswith('/'):
             try:

@@ -107,6 +107,7 @@ class BotInteraction:
 class BotLogicHandling(BotInteraction):
 
     def __init__(self, request):
+        self.request = request
         self._chat = Chat()
         self._state = State()
         self._greeting = Greeting()
@@ -114,16 +115,26 @@ class BotLogicHandling(BotInteraction):
         self.received_message = self.request_message(request)
         self.received_chat_id, self.received_chat_username = self.get_user_data_from_message(self.received_message)
         self.received_text = self.get_text_from_message(self.received_message)
-        print("receive_text: ", self.received_text)
 
         self._chat.add_user_data_to_db(chat_id=self.received_chat_id, username=self.received_chat_username)
 
         self.last_state = self._state.get_last_state(self.received_chat_id)
         self.last_greeting = self._greeting.get_last_greeting(self.received_chat_id)
-        print("last state (chat_id: {0}): {1}".format(self.received_chat_id, self.last_state))
-        print("last greeting (chat_id: {0}): {1}".format(self.received_chat_id, self.last_greeting))
 
         self.outcome = check_outcome(self.received_text)
+
+    def __repr__(self):
+        return """{0}(request={1})
+                  receive_text: {2}
+                  last state (chat_id: {3}): {4}
+                  last greeting (chat_id: {3}): {5}
+                  """.format(
+            BotLogicHandling.__name__,
+            self.request,
+            self.received_text,
+            self.received_chat_id,
+            self.last_state,
+            self.last_greeting)
 
     @property
     def outcome_options(self):
