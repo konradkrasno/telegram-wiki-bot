@@ -83,16 +83,3 @@ def search_text(query):
 
         return outcome_text, _id
     return None, None
-
-
-def check_outcome(text):
-    if re.search(r'\bnie\b|\bno\b|\b[ź|z]le\b|\bz[łl]a\b', text):
-        return False
-    if re.search(r'\btak\b|\bdobrze\b|\bdobra\b|\bgood\b', text):
-        return True
-    if re.search(r'\bdzie[ńn] dobry\b|\bwitam\b', text):
-        return 'greet'
-    if re.search(r'\bwidzenia\b|\bnara\b|\bna razie\b|\b[żz]egnam\b|\bnie chce\b', text):
-        return 'sign_off'
-    if re.search(r'\bcze[śs][ćc]\b|\belo\b|\bsiema\b|\bhej\b', text):
-        return 'greet-sign_off'

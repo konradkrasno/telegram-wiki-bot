@@ -2,15 +2,11 @@ from django.test import TestCase, RequestFactory
 
 from unittest.mock import patch
 
-from ..views import BotInteractionView
-from ..bot_interactions import BotInteraction
-from ..models import Chat, Question, State, Greeting
-from .test_data import (data,
-                        data_if_start,
-                        data_if_question_and_greet,
-                        data_if_question_and_greet_sign_off,
-                        data_if_question_and_sign_off,
-                        data_if_check_answer_and_outcome_true)
+from wiki_bot.views import BotInteractionView
+from wiki_bot.bot_logic import BotInteraction, BotLogicHandling
+from wiki_bot.models import State, Greeting
+
+from wiki_bot.tests.method_matching import method_matching
 
 
 # Create your tests here.
@@ -19,329 +15,80 @@ from .test_data import (data,
 class BotInteractionViewTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
-        self.biv = BotInteractionView()
 
-    @patch.object(BotInteraction, 'start_chat')
-    @patch.object(BotInteraction, 'get_text_from_message', return_value=data_if_start["message"]["text"].strip().lower())
-    @patch.object(BotInteraction, 'get_user_data_from_message', return_value=(
-            data_if_start["message"]["chat"]["id"],
-            data_if_start["message"]["chat"]["first_name"])
-                  )
-    @patch.object(BotInteraction, 'request_message', return_value=data_if_start["message"])
-    def test_post_if_start(self,
-                           mock_request_message,
-                           mock_get_user_data_from_message,
-                           mock_get_text_from_message,
-                           mock_start_chat):
+        self.fake_text = [
+            "/start",
+            "/something",
+            "This is answer text",
+            "witam",
+            "siema",
+            "do widzenia",
+            "tak",
+            "nie"
+        ]
 
-        request = self.factory.post('/wiki_bot', data_if_start, content_type='application/json')
+        self.states = [
+            'question',
+            'answer_feedback'
+        ]
 
-        self.biv.post(request=request)
-        mock_request_message.assert_called_with(request)
-        mock_get_user_data_from_message.assert_called_with(data_if_start["message"])
-        mock_get_text_from_message.assert_called_with(data_if_start["message"])
+        self.greetings = [
+            "first_greet",
+            "greet",
+            "sign_off"
+        ]
 
-        test_content = {
-            'id': 100,
-            'username': "test_first_name"
-        }
+    @staticmethod
+    def fake_data(text):
+        fake_data = {'update_id': 10000000,
+                     'message': {'message_id': 1234,
+                                 'from': {'id': 100,
+                                          'is_bot': False,
+                                          'first_name': 'test_first_name',
+                                          'last_name': 'test_last_name',
+                                          'language_code': 'pl'},
+                                 'chat': {'id': 100,
+                                          'first_name': 'test_first_name',
+                                          'last_name': 'test_last_name',
+                                          'type': 'private'},
+                                 'date': 1582723459,
+                                 'text': text
+                                 }
+                     }
+        return fake_data
 
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
-        self.assertEqual(State.get_last_state(chat_id=100), 'question')
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'first_greet')
-        mock_start_chat.assert_called_with(_id=100, username='test_first_name')
+    def test_post(self):
+        exceptions = []
 
-    @patch.object(BotInteraction, 'user_question', return_value=(True, 'bot_answer'))
-    @patch.object(BotInteraction, 'get_text_from_message', return_value=data["message"]["text"].strip().lower())
-    @patch.object(BotInteraction, 'get_user_data_from_message', return_value=(
-            data["message"]["chat"]["id"],
-            data["message"]["chat"]["first_name"])
-                  )
-    @patch.object(BotInteraction, 'request_message', return_value=data["message"])
-    def test_post_if_last_state_question(self,
-                                         mock_request_message,
-                                         mock_get_user_data_from_message,
-                                         mock_get_text_from_message,
-                                         mock_user_question):
+        for state in self.states:
+            for greeting in self.greetings:
+                for text in self.fake_text:
+                    method = method_matching[state][greeting][text]
 
-        request = self.factory.post('/wiki_bot', data, content_type='application/json')
+                    with self.subTest("{}, {}, {} -> {}".format(state, greeting, text, method)):
+                        with patch.object(State, 'get_last_state', return_value=state) as mock_state:
+                            with patch.object(Greeting, 'get_last_greeting', return_value=greeting) as mock_greeting:
+                                try:
+                                    with patch.object(BotLogicHandling, method) as mock_method:
+                                        request = self.factory.post('/wiki_bot', self.fake_data(text),
+                                                                    content_type='application/json')
+                                        biv = BotInteractionView()
+                                        biv.post(request)
+                                        mock_method.assert_called_with()
 
-        self.biv.post(request=request)
-        mock_request_message.assert_called_with(request)
-        mock_get_user_data_from_message.assert_called_with(data["message"])
-        mock_get_text_from_message.assert_called_with(data["message"])
+                                except TypeError:
+                                    with patch.object(BotInteraction, 'get_text_from_message', return_value=text) as mock_received_text:
+                                        with patch.object(BotInteraction, 'check_outcome', return_value=text) as mock_outcome:
+                                            request = self.factory.post('/wiki_bot', self.fake_data(text),
+                                                                        content_type='application/json')
+                                            biv = BotInteractionView()
+                                            biv.post(request)
 
-        test_content = {
-            'id': 100,
-            'username': "test_first_name"
-        }
+                                            mock_received_text.assert_called()
+                                            mock_outcome.assert_called()
 
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'first_greet')
-        mock_user_question.assert_called_with(_id=100, text='test text')
-        self.assertEqual(State.get_last_state(chat_id=100), 'check_answer')
+                                    exception = "Method for ({}), ({}), ({}) doesn't exist".format(state, greeting, text)
+                                    exceptions.append(exception)
 
-    @patch.object(BotInteractionView, 'check_outcome_for_greeting')
-    @patch.object(BotInteraction, 'get_text_from_message',
-                  return_value=data_if_question_and_greet["message"]["text"].strip().lower())
-    @patch.object(BotInteraction, 'get_user_data_from_message', return_value=(
-            data_if_question_and_greet["message"]["chat"]["id"],
-            data_if_question_and_greet["message"]["chat"]["first_name"])
-                  )
-    @patch.object(BotInteraction, 'request_message', return_value=data_if_question_and_greet["message"])
-    def test_post_if_last_state_question_and_outcome_greet(self,
-                                                           mock_request_message,
-                                                           mock_get_user_data_from_message,
-                                                           mock_get_text_from_message,
-                                                           mock_check_outcome_for_greeting):
-
-        request = self.factory.post('/wiki_bot', data_if_question_and_greet, content_type='application/json')
-
-        self.biv.post(request=request)
-        mock_request_message.assert_called_with(request)
-        mock_get_user_data_from_message.assert_called_with(data_if_question_and_greet["message"])
-        mock_get_text_from_message.assert_called_with(data_if_question_and_greet["message"])
-
-        test_content = {
-            'id': 100,
-            'username': "test_first_name"
-        }
-
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'first_greet')
-        self.assertEqual(State.get_last_state(chat_id=100), 'question')
-        mock_check_outcome_for_greeting.assert_called_with(_id=100, last_greeting='first_greet', outcome='greet')
-
-    @patch.object(BotInteractionView, 'check_outcome_for_greeting')
-    @patch.object(BotInteraction, 'get_text_from_message',
-                  return_value=data_if_question_and_greet_sign_off["message"]["text"].strip().lower())
-    @patch.object(BotInteraction, 'get_user_data_from_message', return_value=(
-            data_if_question_and_greet_sign_off["message"]["chat"]["id"],
-            data_if_question_and_greet_sign_off["message"]["chat"]["first_name"])
-                  )
-    @patch.object(BotInteraction, 'request_message', return_value=data_if_question_and_greet_sign_off["message"])
-    def test_post_if_last_state_question_and_outcome_greet_sign_off(self,
-                                                                    mock_request_message,
-                                                                    mock_get_user_data_from_message,
-                                                                    mock_get_text_from_message,
-                                                                    mock_check_outcome_for_greeting):
-
-        request = self.factory.post('/wiki_bot', data_if_question_and_greet_sign_off, content_type='application/json')
-
-        self.biv.post(request=request)
-        mock_request_message.assert_called_with(request)
-        mock_get_user_data_from_message.assert_called_with(data_if_question_and_greet_sign_off["message"])
-        mock_get_text_from_message.assert_called_with(data_if_question_and_greet_sign_off["message"])
-
-        test_content = {
-            'id': 100,
-            'username': "test_first_name"
-        }
-
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'first_greet')
-        self.assertEqual(State.get_last_state(chat_id=100), 'question')
-        mock_check_outcome_for_greeting.assert_called_with(_id=100, last_greeting='first_greet', outcome='greet-sign_off')
-
-    @patch.object(BotInteractionView, 'check_outcome_for_greeting')
-    @patch.object(BotInteraction, 'get_text_from_message',
-                  return_value=data_if_question_and_sign_off["message"]["text"].strip().lower())
-    @patch.object(BotInteraction, 'get_user_data_from_message', return_value=(
-            data_if_question_and_sign_off["message"]["chat"]["id"],
-            data_if_question_and_sign_off["message"]["chat"]["first_name"])
-                  )
-    @patch.object(BotInteraction, 'request_message', return_value=data_if_question_and_sign_off["message"])
-    def test_post_if_last_state_question_and_outcome_sign_off(self,
-                                                              mock_request_message,
-                                                              mock_get_user_data_from_message,
-                                                              mock_get_text_from_message,
-                                                              mock_check_outcome_for_greeting):
-
-        request = self.factory.post('/wiki_bot', data_if_question_and_sign_off, content_type='application/json')
-
-        self.biv.post(request=request)
-        mock_request_message.assert_called_with(request)
-        mock_get_user_data_from_message.assert_called_with(data_if_question_and_sign_off["message"])
-        mock_get_text_from_message.assert_called_with(data_if_question_and_sign_off["message"])
-
-        test_content = {
-            'id': 100,
-            'username': "test_first_name"
-        }
-
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'first_greet')
-        self.assertEqual(State.get_last_state(chat_id=100), 'question')
-        mock_check_outcome_for_greeting.assert_called_with(_id=100, last_greeting='first_greet', outcome='sign_off')
-
-    @patch.object(BotInteraction, 'remind_about_check_answer')
-    @patch.object(BotInteraction, 'get_text_from_message', return_value=data["message"]["text"].strip().lower())
-    @patch.object(BotInteraction, 'get_user_data_from_message', return_value=(
-            data["message"]["chat"]["id"],
-            data["message"]["chat"]["first_name"])
-                  )
-    @patch.object(BotInteraction, 'request_message', return_value=data["message"])
-    def test_post_if_last_state_check_answer(self,
-                                             mock_request_message,
-                                             mock_get_user_data_from_message,
-                                             mock_get_text_from_message,
-                                             mock_remind_about_check_answer):
-
-        Chat(id=100, username='test_first_name').save()
-        State(chat=Chat.objects.get(id=100), state='test_first_name').save()
-        State.change_state(chat_id=100, state='check_answer')
-
-        request = self.factory.post('/wiki_bot', data, content_type='application/json')
-
-        self.biv.post(request=request)
-        mock_request_message.assert_called_with(request)
-        mock_get_user_data_from_message.assert_called_with(data["message"])
-        mock_get_text_from_message.assert_called_with(data["message"])
-
-        test_content = {
-            'id': 100,
-            'username': "test_first_name"
-        }
-
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'first_greet')
-        self.assertEqual(State.get_last_state(chat_id=100), 'check_answer')
-        mock_remind_about_check_answer.assert_called_with(_id=100)
-
-    @patch.object(BotInteractionView, 'check_outcome_for_feedback')
-    @patch.object(BotInteraction, 'get_text_from_message',
-                  return_value=data_if_check_answer_and_outcome_true["message"]["text"].strip().lower())
-    @patch.object(BotInteraction, 'get_user_data_from_message', return_value=(
-            data_if_check_answer_and_outcome_true["message"]["chat"]["id"],
-            data_if_check_answer_and_outcome_true["message"]["chat"]["first_name"])
-                  )
-    @patch.object(BotInteraction, 'request_message', return_value=data_if_check_answer_and_outcome_true["message"])
-    def test_post_if_last_state_check_answer_and_outcome_true(self,
-                                                              mock_request_message,
-                                                              mock_get_user_data_from_message,
-                                                              mock_get_text_from_message,
-                                                              mock_check_outcome_for_feedback):
-
-        Chat(id=100, username='test_first_name').save()
-        State(chat=Chat.objects.get(id=100), state='test_first_name').save()
-        State.change_state(chat_id=100, state='check_answer')
-
-        request = self.factory.post('/wiki_bot', data_if_check_answer_and_outcome_true, content_type='application/json')
-
-        self.biv.post(request=request)
-        mock_request_message.assert_called_with(request)
-        mock_get_user_data_from_message.assert_called_with(data_if_check_answer_and_outcome_true["message"])
-        mock_get_text_from_message.assert_called_with(data_if_check_answer_and_outcome_true["message"])
-
-        test_content = {
-            'id': 100,
-            'username': "test_first_name"
-        }
-
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'first_greet')
-        self.assertEqual(State.get_last_state(chat_id=100), 'check_answer')
-        mock_check_outcome_for_feedback.assert_called_with(_id=100, outcome=True)
-
-    @patch.object(BotInteractionView, 'check_outcome_for_greeting')
-    @patch.object(BotInteraction, 'get_text_from_message',
-                  return_value=data_if_question_and_greet["message"]["text"].strip().lower())
-    @patch.object(BotInteraction, 'get_user_data_from_message', return_value=(
-            data_if_question_and_greet["message"]["chat"]["id"],
-            data_if_question_and_greet["message"]["chat"]["first_name"])
-                  )
-    @patch.object(BotInteraction, 'request_message', return_value=data_if_question_and_greet["message"])
-    def test_post_if_last_state_check_answer_and_outcome_greet(self,
-                                                               mock_request_message,
-                                                               mock_get_user_data_from_message,
-                                                               mock_get_text_from_message,
-                                                               mock_check_outcome_for_greeting):
-
-        Chat(id=100, username='test_first_name').save()
-        State(chat=Chat.objects.get(id=100), state='test_first_name').save()
-        State.change_state(chat_id=100, state='check_answer')
-
-        request = self.factory.post('/wiki_bot', data_if_question_and_greet, content_type='application/json')
-
-        self.biv.post(request=request)
-        mock_request_message.assert_called_with(request)
-        mock_get_user_data_from_message.assert_called_with(data_if_question_and_greet["message"])
-        mock_get_text_from_message.assert_called_with(data_if_question_and_greet["message"])
-
-        test_content = {
-            'id': 100,
-            'username': "test_first_name"
-        }
-
-        self.assertDictEqual(Chat.objects.values('id', 'username')[0], test_content)
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'first_greet')
-        self.assertEqual(State.get_last_state(chat_id=100), 'check_answer')
-        mock_check_outcome_for_greeting.assert_called_with(_id=100, last_greeting='first_greet', outcome='greet')
-
-    @patch.object(BotInteraction, 'check_answer')
-    def test_check_outcome_for_feedback(self, mock_check_answer):
-        Chat(id=100, username='test_user').save()
-        Question.save_question(chat_id=100, question='test_question')
-        State.get_last_state(chat_id=100)
-
-        self.biv.check_outcome_for_feedback(_id=100, outcome=True)
-        mock_check_answer.assert_called_with(True, 100)
-        self.assertEqual(State.get_last_state(chat_id=100), 'question')
-
-        self.biv.check_outcome_for_feedback(_id=100, outcome=False)
-        mock_check_answer.assert_called_with(False, 100)
-        self.assertEqual(State.get_last_state(chat_id=100), 'question')
-
-    @patch.object(BotInteraction, 'sign_off')
-    @patch.object(BotInteraction, 'greet')
-    def test_check_outcome_for_greeting_if_first_greet_and_greet(self, mock_greet, mock_sign_off):
-        Chat(id=100, username='test_user').save()
-        Question.save_question(chat_id=100, question='test_question')
-        State.get_last_state(chat_id=100)
-        Greeting.get_last_greeting(chat_id=100)
-
-        self.biv.check_outcome_for_greeting(_id=100, last_greeting='first_greet', outcome='greet')
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'greet')
-        self.assertFalse(mock_sign_off.called, "Function sign_off called")
-        self.assertFalse(mock_greet.called, "Function greet called")
-
-    @patch.object(BotInteraction, 'sign_off')
-    @patch.object(BotInteraction, 'greet')
-    def test_check_outcome_for_greeting_if_first_greet_and_sign_off(self, mock_greet, mock_sign_off):
-        Chat(id=100, username='test_user').save()
-        Question.save_question(chat_id=100, question='test_question')
-        State.get_last_state(chat_id=100)
-        Greeting.get_last_greeting(chat_id=100)
-
-        self.biv.check_outcome_for_greeting(_id=100, last_greeting='first_greet', outcome='sign_off')
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'sign_off')
-        mock_sign_off.assert_called_with(100)
-        self.assertFalse(mock_greet.called, "Function greet called")
-
-    @patch.object(BotInteraction, 'sign_off')
-    @patch.object(BotInteraction, 'greet')
-    def test_check_outcome_for_greeting_if_greet_and_sign_off(self, mock_greet, mock_sign_off):
-        Chat(id=100, username='test_user').save()
-        Question.save_question(chat_id=100, question='test_question')
-        State.get_last_state(chat_id=100)
-        Greeting.get_last_greeting(chat_id=100)
-
-        self.biv.check_outcome_for_greeting(_id=100, last_greeting='greet', outcome='sign_off')
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'sign_off')
-        self.assertEqual(State.get_last_state(chat_id=100), 'question')
-        mock_sign_off.assert_called_with(100)
-        self.assertFalse(mock_greet.called, "Function greet called")
-
-    @patch.object(BotInteraction, 'sign_off')
-    @patch.object(BotInteraction, 'greet')
-    def test_check_outcome_for_greeting_if_sign_off_and_greet(self, mock_greet, mock_sign_off):
-        Chat(id=100, username='test_user').save()
-        Question.save_question(chat_id=100, question='test_question')
-        State.get_last_state(chat_id=100)
-        Greeting.get_last_greeting(chat_id=100)
-
-        self.biv.check_outcome_for_greeting(_id=100, last_greeting='sign_off', outcome='greet')
-        self.assertEqual(Greeting.get_last_greeting(chat_id=100), 'greet')
-        self.assertEqual(State.get_last_state(chat_id=100), 'question')
-        self.assertFalse(mock_sign_off.called, "Function sign_off called")
-        mock_greet.assert_called_with(100)
+        for elem in exceptions:
+            print(elem)

@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from ..models import Chat, Question, Answer, CheckAnswer, State, Greeting
+from wiki_bot.models import Chat, Question, Answer, AnswerFeedback, State, Greeting
 
 # Create your tests here.
 
@@ -48,18 +48,18 @@ class AnswerModelTests(TestCase):
                              test_content)
 
 
-class CheckAnswerModelTests(TestCase):
-    def test_save_check_answer(self):
+class AnswerFeedbackModelTests(TestCase):
+    def test_save_answer_feedback(self):
         Chat(id=100, username='test_user').save()
         Question.save_question(chat_id=100, question='test_question_1')
         Question.save_question(chat_id=100, question='test_question_2')
 
-        CheckAnswer.save_check_answer(chat_id=100, if_right=False)
+        AnswerFeedback.save_answer_feedback(chat_id=100, if_right=False)
         test_content = {
             'chat': 100,
             'if_right': False,
         }
-        self.assertDictEqual(CheckAnswer.objects.values('chat', 'if_right')[0],
+        self.assertDictEqual(AnswerFeedback.objects.values('chat', 'if_right')[0],
                              test_content)
 
 

@@ -3,13 +3,13 @@ from random import choice
 custom_messages = {
     'next_questions':
         {
-        False:["Zadaj pytanie w innny sposób ;)", "Zadaj pytanie inaczej", "Spróbuj zadać pytanie używając innych słów"],
-         True:["Zadaj mi jeszcze jakieś pytanie ;)", "Poproszę o następne pytania!"]
+        False: ["Zadaj pytanie w innny sposób ;)", "Zadaj pytanie inaczej", "Spróbuj zadać pytanie używając innych słów"],
+        True: ["Zadaj mi jeszcze jakieś pytanie ;)", "Poproszę o następne pytania!"]
         },
     'output_answers':
         {
-        False:['Szkoda ;(', 'Przepraszam, że Ci nie mogłem pomóc'],
-        True:['Cieszę się!', 'Super!', 'Uff.. Udało się :)']
+        False: ['Szkoda ;(', 'Przepraszam, że Ci nie mogłem pomóc'],
+        True: ['Cieszę się!', 'Super!', 'Uff.. Udało się :)']
         },
     'greet_answers':
         {
@@ -19,9 +19,9 @@ custom_messages = {
         {
         'sign_off': ['Dobranoc', 'Elo Ziom', 'Do zobaczenia ponownie', 'Siema siema']
         },
-    'remind_about_check_answer':
+    'remind_about_answer_feedback':
         {
-        'check_answer': ['Nie powiedziałeś czy dobrze odpowiedzałem', 'Daj znać czy dobrze odpowiedziałem']
+        'answer_feedback': ['Nie powiedziałeś czy dobrze odpowiedzałem', 'Daj znać czy dobrze odpowiedziałem']
         }
 }
 

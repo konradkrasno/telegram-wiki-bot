@@ -69,13 +69,13 @@ class AnswerTime(models.Model):
     interval = models.DurationField()
 
 
-class CheckAnswer(models.Model):
+class AnswerFeedback(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     if_right = models.BooleanField()
 
     @classmethod
-    def save_check_answer(cls, chat_id, if_right):
+    def save_answer_feedback(cls, chat_id, if_right):
         cls(
             question=Question.objects.filter(chat=chat_id).latest('id'),
             chat=Chat.objects.get(id=chat_id),
