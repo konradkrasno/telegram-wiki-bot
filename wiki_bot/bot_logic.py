@@ -15,6 +15,10 @@ class BotInteraction:
 
     @staticmethod
     def check_outcome(text):
+        if text == '/start':
+            return 'start_outcome'
+        if text.startswith('/'):
+            return 'external_command_outcome'
         if re.search(r'\bnie\b|\bno\b|\b[ź|z]le\b|\bz[łl]a\b', text):
             return 'negative_answer_feedback_outcome'
         if re.search(r'\btak\b|\bdobrze\b|\bdobra\b|\bgood\b', text):
@@ -156,17 +160,23 @@ class BotLogicHandling(BotInteraction):
         outcome_options = {
             'question': {
                 'first_greet': {
+                    'start_outcome': self.start,
+                    'external_command_outcome': self.external_command,
                     'greet_outcome': self.change_first_greet_status_to_greet,
                     'greet_or_sign_off_outcome': self.change_first_greet_status_to_greet,
                     'sign_off_outcome': self.change_greet_status_to_sign_off,
                     'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
                 },
                 'greet': {
+                    'start_outcome': self.start,
+                    'external_command_outcome': self.external_command,
                     'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off,
                     'sign_off_outcome': self.change_greet_status_to_sign_off,
                     'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
                 },
                 'sign_off': {
+                    'start_outcome': self.start,
+                    'external_command_outcome': self.external_command,
                     'greet_outcome': self.change_sign_off_status_to_greet,
                     'greet_or_sign_off_outcome': self.change_sign_off_status_to_greet,
                     'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
@@ -174,6 +184,8 @@ class BotLogicHandling(BotInteraction):
             },
             'answer_feedback': {
                 'first_greet': {
+                    'start_outcome': self.start,
+                    'external_command_outcome': self.external_command,
                     'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
                     'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
                     'greet_outcome': self.change_first_greet_status_to_greet,
@@ -182,6 +194,8 @@ class BotLogicHandling(BotInteraction):
                     'question_outcome': self.remind_about_answer_feedback
                 },
                 'greet': {
+                    'start_outcome': self.start,
+                    'external_command_outcome': self.external_command,
                     'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
                     'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
                     'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off_and_change_state_status_to_question,
@@ -189,6 +203,8 @@ class BotLogicHandling(BotInteraction):
                     'question_outcome': self.remind_about_answer_feedback
                 },
                 'sign_off': {
+                    'start_outcome': self.start,
+                    'external_command_outcome': self.external_command,
                     'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
                     'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
                     'greet_outcome': self.change_sign_off_status_to_greet_and_change_state_status_to_question,
@@ -199,18 +215,13 @@ class BotLogicHandling(BotInteraction):
         }
         return outcome_options
 
-    @property
-    def bot_status(self):
-        bot_status = {
-            '/start': self.start,
-            'after_start': self.outcome_options,
-        }
-        return bot_status
-
     def start(self):
         self._state.change_state(chat_id=self.received_chat_id, state='question')
         self._greeting.change_greeting(chat_id=self.received_chat_id, greeting='first_greet')
         self.start_message(chat_id=self.received_chat_id, username=self.received_chat_username)
+
+    def external_command(self):
+        pass
 
     def save_positive_feedback_and_change_state_to_question(self):
         self._state.change_state(chat_id=self.received_chat_id, state='question')

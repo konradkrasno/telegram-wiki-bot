@@ -45,6 +45,10 @@ class BotInteractionTests(TestCase):
         self.factory = RequestFactory()
         self.bi = BotInteraction()
 
+    def test_check_outcome(self):
+        self.assertEqual(self.bi.check_outcome('/something'), 'external_command_outcome')
+        self.assertEqual(self.bi.check_outcome('/start'), 'start_outcome')
+
     def test_request_message(self):
         request = self.factory.post('/wiki_bot', fake_data, content_type='application/json')
         msg = BotInteraction.request_message(request)
