@@ -88,12 +88,13 @@ def search_text(query):
 
 def check_outcome(text):
     if re.search(r'\bnie\b|\bno\b|\b[ź|z]le\b|\bz[łl]a\b', text):
-        return False
+        return 'negative_answer_feedback_outcome'
     if re.search(r'\btak\b|\bdobrze\b|\bdobra\b|\bgood\b', text):
-        return True
+        return 'positive_answer_feedback_outcome'
     if re.search(r'\bdzie[ńn] dobry\b|\bwitam\b', text):
-        return 'greet'
+        return 'greet_outcome'
     if re.search(r'\bwidzenia\b|\bnara\b|\bna razie\b|\b[żz]egnam\b|\bnie chce\b', text):
-        return 'sign_off'
+        return 'sign_off_outcome'
     if re.search(r'\bcze[śs][ćc]\b|\belo\b|\bsiema\b|\bhej\b', text):
-        return 'greet-sign_off'
+        return 'greet_or_sign_off_outcome'
+    return 'question_outcome'
