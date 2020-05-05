@@ -206,8 +206,8 @@ class BotLogicHandling(BotInteraction):
         self.save_answer_feedback_and_send_message(feedback=False, chat_id=self.received_chat_id)
 
     def change_sign_off_status_to_greet_and_change_state_status_to_question(self):
-        self._greeting.change_greeting(chat_id=self.received_chat_id, greeting='greet')
         self._state.change_state(chat_id=self.received_chat_id, state='question')
+        self._greeting.change_greeting(chat_id=self.received_chat_id, greeting='greet')
         self.greet_message(chat_id=self.received_chat_id)
 
     def change_sign_off_status_to_greet(self):
@@ -215,8 +215,8 @@ class BotLogicHandling(BotInteraction):
         self.greet_message(chat_id=self.received_chat_id)
 
     def change_greet_status_to_sign_off_and_change_state_status_to_question(self):
-        self._greeting.change_greeting(chat_id=self.received_chat_id, greeting='sign_off')
         self._state.change_state(chat_id=self.received_chat_id, state='question')
+        self._greeting.change_greeting(chat_id=self.received_chat_id, greeting='sign_off')
         self.sign_off_message(chat_id=self.received_chat_id)
 
     def change_greet_status_to_sign_off(self):

@@ -6,65 +6,65 @@ from wiki_bot.models import Chat, Question, Answer, AnswerFeedback
 from wiki_bot.custom_message import custom_messages
 
 
-# Create your tests here.
+fake_data = {'update_id': 10000000,
+             'message': {'message_id': 1234,
+                         'from': {'id': 100,
+                                  'is_bot': False,
+                                  'first_name': 'test_first_name',
+                                  'last_name': 'test_last_name',
+                                  'language_code': 'pl'},
+                         'chat': {'id': 100,
+                                  'first_name': 'test_first_name',
+                                  'last_name': 'test_last_name',
+                                  'type': 'private'},
+                         'date': 1582723459,
+                         'text': 'test text'
+                         }
+             }
+
+fake_json_data = {
+    "ok": True,
+    "result":
+        {"message_id": 1234,
+         "from": {"id": 996463999,
+                  "is_bot": True,
+                  "first_name": "WikiBot",
+                  "username": "kondzio_bot"},
+         "chat": {"id": 100,
+                  "first_name": "test_first_name",
+                  "last_name": "test_last_name",
+                  "type": "private"},
+         "date": 1582900572,
+         "text": "test message"
+         }
+}
 
 
 class BotInteractionTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
-        self.data = {'update_id': 10000000,
-                     'message': {'message_id': 1234,
-                                 'from': {'id': 100,
-                                          'is_bot': False,
-                                          'first_name': 'test_first_name',
-                                          'last_name': 'test_last_name',
-                                          'language_code': 'pl'},
-                                 'chat': {'id': 100,
-                                          'first_name': 'test_first_name',
-                                          'last_name': 'test_last_name',
-                                          'type': 'private'},
-                                 'date': 1582723459,
-                                 'text': 'test text'
-                                 }
-                     }
         self.bi = BotInteraction()
-        self.json_data = {
-            "ok": True,
-            "result":
-                {"message_id": 1234,
-                 "from": {"id": 996463999,
-                          "is_bot": True,
-                          "first_name": "WikiBot",
-                          "username": "kondzio_bot"},
-                 "chat": {"id": 100,
-                          "first_name": "test_first_name",
-                          "last_name": "test_last_name",
-                          "type": "private"},
-                 "date": 1582900572,
-                 "text": "test message"
-                 }
-        }
 
     def test_request_message(self):
-        request = self.factory.post('/wiki_bot', self.data, content_type='application/json')
+        request = self.factory.post('/wiki_bot', fake_data, content_type='application/json')
         msg = BotInteraction.request_message(request)
-        self.assertDictEqual(msg, self.data["message"])
+        self.assertDictEqual(msg, fake_data["message"])
 
     def test_get_user_data_from_message(self):
-        request = self.factory.post('/wiki_bot', self.data, content_type='application/json')
+        request = self.factory.post('/wiki_bot', fake_data, content_type='application/json')
         msg = BotInteraction.request_message(request)
         (_id, username) = BotInteraction.get_user_data_from_message(msg)
         self.assertTupleEqual((_id, username), (100, 'test_first_name'))
 
     def test_get_text_from_message(self):
-        request = self.factory.post('/wiki_bot', self.data, content_type='application/json')
+        request = self.factory.post('/wiki_bot', fake_data, content_type='application/json')
         msg = BotInteraction.request_message(request)
         text = BotInteraction.get_text_from_message(msg)
         self.assertEqual(text, 'test text')
 
     def test_get_text_from_message_if_text_is_empty(self):
-        self.data["message"]["text"] = ''
-        request = self.factory.post('/wiki_bot', self.data, content_type='application/json')
+        fake_data["message"]["text"] = ''
+        request = self.factory.post('/wiki_bot', fake_data, content_type='application/json')
         msg = BotInteraction.request_message(request)
         text = BotInteraction.get_text_from_message(msg)
         self.assertEqual(text, '')
@@ -74,7 +74,7 @@ class BotInteractionTests(TestCase):
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         mock_response = BotInteraction.send_message(message="test message", chat_id=100)
 
@@ -82,17 +82,17 @@ class BotInteractionTests(TestCase):
 
         self.assertIsNotNone(mock_response)
         self.assertEqual(mock_response.status_code, 200)
-        self.assertEqual(mock_response.json(), self.json_data)
+        self.assertEqual(mock_response.json(), fake_json_data)
 
     def test_start_message(self):
-        self.json_data["result"]["text"] = "Witaj TestUser. Jestem WikiBot, zapytaj mnie o jakąś informację" \
+        fake_json_data["result"]["text"] = "Witaj TestUser. Jestem WikiBot, zapytaj mnie o jakąś informację" \
                                            " z Wikipedii, a dam Ci odpowiedź!"
 
         mock_get_patcher = patch('wiki_bot.bot_logic.requests.post')
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         mock_response = self.bi.start_message(chat_id=100, username="TestUser")
 
@@ -115,7 +115,7 @@ class BotInteractionTests(TestCase):
 
         mock_post = mock_post_patcher.start()
         mock_post.return_value = Mock(status_code=200)
-        mock_post.return_value.json.return_value = self.json_data
+        mock_post.return_value.json.return_value = fake_json_data
 
         mock_search_text = mock_search_text_patcher.start()
         mock_search_text.return_value = mock_context, mock_article_id
@@ -137,8 +137,8 @@ class BotInteractionTests(TestCase):
         context_text = "This is context text"
         question_text = "This is question text"
         answer_text = "This is answer text"
-        self.json_data["result"]["text_1"] = "This is answer text"
-        self.json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
+        fake_json_data["result"]["text_1"] = "This is answer text"
+        fake_json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
 
         Chat(id=100, username='test_user').save()
 
@@ -166,8 +166,8 @@ class BotInteractionTests(TestCase):
         context_text = "This is context text"
         question_text = "This is question text"
         answer_text = ""
-        self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
-        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
+        fake_json_data["result"]["text_1"] = "Nie rozumiem Cię :("
+        fake_json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
         Chat(id=100, username='test_user').save()
 
@@ -202,8 +202,8 @@ class BotInteractionTests(TestCase):
         context_text = None
         question_text = "This is question text"
         answer_text = None
-        self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
-        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
+        fake_json_data["result"]["text_1"] = "Nie rozumiem Cię :("
+        fake_json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
         Chat(id=100, username='test_user').save()
 
@@ -228,14 +228,14 @@ class BotInteractionTests(TestCase):
                              test_content_answer_feedback)
 
     def test_text_if_bot_do_not_know_answer(self):
-        self.json_data["result"]["text_1"] = "Nie rozumiem Cię :("
-        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
+        fake_json_data["result"]["text_1"] = "Nie rozumiem Cię :("
+        fake_json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
         mock_get_patcher = patch('wiki_bot.bot_logic.requests.post')
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         bot_text = self.bi.text_if_bot_do_not_know_answer(chat_id=100)
 
@@ -248,14 +248,14 @@ class BotInteractionTests(TestCase):
         self.assertEqual(msg_text_2, "Zadaj pytanie w innny sposób ;)")
 
     def test_send_bot_answer(self):
-        self.json_data["result"]["text_1"] = "test answer"
-        self.json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
+        fake_json_data["result"]["text_1"] = "test answer"
+        fake_json_data["result"]["text_2"] = "Czy odpowiedziałem wyczerpująco na Twoje pytanie?"
 
         mock_get_patcher = patch('wiki_bot.bot_logic.requests.post')
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         bot_answer = self.bi.send_bot_answer(answer='test answer', chat_id=100)
 
@@ -268,8 +268,8 @@ class BotInteractionTests(TestCase):
         self.assertEqual(msg_text_2, "Czy odpowiedziałem wyczerpująco na Twoje pytanie?")
 
     def test_save_answer_feedback_and_send_message_if_true(self):
-        self.json_data["result"]["text_1"] = 'Super!'
-        self.json_data["result"]["text_2"] = "Zadaj mi jeszcze jakieś pytanie ;)"
+        fake_json_data["result"]["text_1"] = 'Super!'
+        fake_json_data["result"]["text_2"] = "Zadaj mi jeszcze jakieś pytanie ;)"
 
         feedback = True
         Chat(id=100, username='test_user').save()
@@ -279,7 +279,7 @@ class BotInteractionTests(TestCase):
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         mock_check = self.bi.save_answer_feedback_and_send_message(feedback=feedback, chat_id=100)
 
@@ -298,8 +298,8 @@ class BotInteractionTests(TestCase):
         self.assertIn(msg_text_2, custom_messages["next_questions"][feedback])
 
     def test_save_answer_feedback_and_send_message_if_false(self):
-        self.json_data["result"]["text_1"] = 'Szkoda ;('
-        self.json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
+        fake_json_data["result"]["text_1"] = 'Szkoda ;('
+        fake_json_data["result"]["text_2"] = "Zadaj pytanie w innny sposób ;)"
 
         feedback = False
         Chat(id=100, username='test_user').save()
@@ -309,7 +309,7 @@ class BotInteractionTests(TestCase):
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         mock_check = self.bi.save_answer_feedback_and_send_message(feedback=feedback, chat_id=100)
 
@@ -328,13 +328,13 @@ class BotInteractionTests(TestCase):
         self.assertIn(msg_text_2, custom_messages["next_questions"][feedback])
 
     def test_greet(self):
-        self.json_data["result"]["text"] = 'Witaj, w czym mogę Ci pomóc?'
+        fake_json_data["result"]["text"] = 'Witaj, w czym mogę Ci pomóc?'
 
         mock_get_patcher = patch('wiki_bot.bot_logic.requests.post')
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         mock_greet = self.bi.greet_message(chat_id=100)
 
@@ -344,13 +344,13 @@ class BotInteractionTests(TestCase):
         self.assertIn(msg_text, custom_messages["greet_answers"]["greet"])
 
     def test_sign_off(self):
-        self.json_data["result"]["text"] = 'Do zobaczenia ponownie'
+        fake_json_data["result"]["text"] = 'Do zobaczenia ponownie'
 
         mock_get_patcher = patch('wiki_bot.bot_logic.requests.post')
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         mock_sign_off = self.bi.sign_off_message(chat_id=100)
 
@@ -360,13 +360,13 @@ class BotInteractionTests(TestCase):
         self.assertIn(msg_text, custom_messages["sign_off_answers"]["sign_off"])
 
     def test_remind_about_answer_feedback(self):
-        self.json_data["result"]["text"] = 'Nie powiedziałeś czy dobrze odpowiedzałem'
+        fake_json_data["result"]["text"] = 'Nie powiedziałeś czy dobrze odpowiedzałem'
 
         mock_get_patcher = patch('wiki_bot.bot_logic.requests.post')
 
         mock_get = mock_get_patcher.start()
         mock_get.return_value = Mock(status_code=200)
-        mock_get.return_value.json.return_value = self.json_data
+        mock_get.return_value.json.return_value = fake_json_data
 
         mock_remind = self.bi.remind_about_answer_feedback_message(chat_id=100)
 
