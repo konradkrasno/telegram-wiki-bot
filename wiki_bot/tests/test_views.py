@@ -58,38 +58,28 @@ class BotInteractionViewTests(TestCase):
         return fake_data
 
     def test_post(self):
-        exceptions = []
 
         for state in self.states:
             for greeting in self.greetings:
                 for text in self.fake_text:
-                    method = method_matching[state][greeting][text]
+                    try:
+                        method = method_matching[state][greeting][text]
+                    except KeyError:
+                        with patch('builtins.print') as mock_print:
+                            request = self.factory.post('/wiki_bot', self.fake_data(text),
+                                                        content_type='application/json')
+                            biv = BotInteractionView()
+                            biv.post(request)
 
-                    with self.subTest("{}, {}, {} -> {}".format(state, greeting, text, method)):
-                        with patch.object(State, 'get_last_state', return_value=state) as mock_state:
-                            with patch.object(Greeting, 'get_last_greeting', return_value=greeting) as mock_greeting:
-                                try:
+                            mock_print.assert_called_with('KeyError: {!r}'.
+                                                          format(BotInteraction.check_outcome(text)))
+                    else:
+                        with self.subTest("{}, {}, {} -> {}".format(state, greeting, text, method)):
+                            with patch.object(State, 'get_last_state', return_value=state) as mock_state:
+                                with patch.object(Greeting, 'get_last_greeting', return_value=greeting) as mock_greeting:
                                     with patch.object(BotLogicHandling, method) as mock_method:
                                         request = self.factory.post('/wiki_bot', self.fake_data(text),
                                                                     content_type='application/json')
                                         biv = BotInteractionView()
                                         biv.post(request)
                                         mock_method.assert_called_with()
-
-                                except TypeError:
-                                    with patch('builtins.print') as mock_print:
-                                        request = self.factory.post('/wiki_bot', self.fake_data(text),
-                                                                    content_type='application/json')
-                                        biv = BotInteractionView()
-                                        biv.post(request)
-
-                                        mock_print.assert_called_with('KeyError: {!r}'.
-                                                                      format(BotInteraction.check_outcome(text)))
-
-                                    exception = "Method for ({}), ({}), ({}) doesn't exist".format(state,
-                                                                                                   greeting,
-                                                                                                   text)
-                                    exceptions.append(exception)
-
-        for elem in exceptions:
-            print(elem)

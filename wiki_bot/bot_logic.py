@@ -157,60 +157,82 @@ class BotLogicHandling(BotInteraction):
 
     @property
     def outcome_options(self):
+        question_and_first_greet_options = {
+            'start_outcome': self.start,
+            'external_command_outcome': self.external_command,
+            'positive_answer_feedback_outcome': self.do_nothing,
+            'negative_answer_feedback_outcome': self.do_nothing,
+            'greet_outcome': self.change_first_greet_status_to_greet,
+            'greet_or_sign_off_outcome': self.change_first_greet_status_to_greet,
+            'sign_off_outcome': self.change_greet_status_to_sign_off,
+            'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
+        }
+
+        question_and_greet_options = {
+            'start_outcome': self.start,
+            'external_command_outcome': self.external_command,
+            'positive_answer_feedback_outcome': self.do_nothing,
+            'negative_answer_feedback_outcome': self.do_nothing,
+            'greet_outcome': self.do_nothing,
+            'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off,
+            'sign_off_outcome': self.change_greet_status_to_sign_off,
+            'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
+        }
+
+        question_and_sign_off_options = {
+            'start_outcome': self.start,
+            'external_command_outcome': self.external_command,
+            'positive_answer_feedback_outcome': self.do_nothing,
+            'negative_answer_feedback_outcome': self.do_nothing,
+            'greet_outcome': self.change_sign_off_status_to_greet,
+            'greet_or_sign_off_outcome': self.change_sign_off_status_to_greet,
+            'sign_off_outcome': self.do_nothing,
+            'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
+        }
+
+        answer_feedback_and_first_greet_options = {
+            'start_outcome': self.start,
+            'external_command_outcome': self.external_command,
+            'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
+            'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
+            'greet_outcome': self.change_first_greet_status_to_greet,
+            'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off,
+            'sign_off_outcome': self.change_greet_status_to_sign_off,
+            'question_outcome': self.remind_about_answer_feedback
+        }
+
+        answer_feedback_and_greet_options = {
+            'start_outcome': self.start,
+            'external_command_outcome': self.external_command,
+            'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
+            'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
+            'greet_outcome': self.do_nothing,
+            'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off_and_change_state_status_to_question,
+            'sign_off_outcome': self.change_greet_status_to_sign_off_and_change_state_status_to_question,
+            'question_outcome': self.remind_about_answer_feedback
+        }
+
+        answer_feedback_and_sign_off_options = {
+            'start_outcome': self.start,
+            'external_command_outcome': self.external_command,
+            'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
+            'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
+            'greet_outcome': self.change_sign_off_status_to_greet_and_change_state_status_to_question,
+            'greet_or_sign_off_outcome': self.change_sign_off_status_to_greet_and_change_state_status_to_question,
+            'sign_off_outcome': self.do_nothing,
+            'question_outcome': self.remind_about_answer_feedback
+        }
+
         outcome_options = {
             'question': {
-                'first_greet': {
-                    'start_outcome': self.start,
-                    'external_command_outcome': self.external_command,
-                    'greet_outcome': self.change_first_greet_status_to_greet,
-                    'greet_or_sign_off_outcome': self.change_first_greet_status_to_greet,
-                    'sign_off_outcome': self.change_greet_status_to_sign_off,
-                    'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
-                },
-                'greet': {
-                    'start_outcome': self.start,
-                    'external_command_outcome': self.external_command,
-                    'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off,
-                    'sign_off_outcome': self.change_greet_status_to_sign_off,
-                    'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
-                },
-                'sign_off': {
-                    'start_outcome': self.start,
-                    'external_command_outcome': self.external_command,
-                    'greet_outcome': self.change_sign_off_status_to_greet,
-                    'greet_or_sign_off_outcome': self.change_sign_off_status_to_greet,
-                    'question_outcome': self.check_answer_valid_and_change_state_status_to_answer_feedback
-                },
+                'first_greet': question_and_first_greet_options,
+                'greet': question_and_greet_options,
+                'sign_off': question_and_sign_off_options,
             },
             'answer_feedback': {
-                'first_greet': {
-                    'start_outcome': self.start,
-                    'external_command_outcome': self.external_command,
-                    'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
-                    'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
-                    'greet_outcome': self.change_first_greet_status_to_greet,
-                    'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off,
-                    'sign_off_outcome': self.change_greet_status_to_sign_off,
-                    'question_outcome': self.remind_about_answer_feedback
-                },
-                'greet': {
-                    'start_outcome': self.start,
-                    'external_command_outcome': self.external_command,
-                    'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
-                    'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
-                    'greet_or_sign_off_outcome': self.change_greet_status_to_sign_off_and_change_state_status_to_question,
-                    'sign_off_outcome': self.change_greet_status_to_sign_off_and_change_state_status_to_question,
-                    'question_outcome': self.remind_about_answer_feedback
-                },
-                'sign_off': {
-                    'start_outcome': self.start,
-                    'external_command_outcome': self.external_command,
-                    'positive_answer_feedback_outcome': self.save_positive_feedback_and_change_state_to_question,
-                    'negative_answer_feedback_outcome': self.save_negative_feedback_and_change_state_to_question,
-                    'greet_outcome': self.change_sign_off_status_to_greet_and_change_state_status_to_question,
-                    'greet_or_sign_off_outcome': self.change_sign_off_status_to_greet_and_change_state_status_to_question,
-                    'question_outcome': self.remind_about_answer_feedback
-                },
+                'first_greet': answer_feedback_and_first_greet_options,
+                'greet': answer_feedback_and_greet_options,
+                'sign_off': answer_feedback_and_sign_off_options,
             }
         }
         return outcome_options
@@ -221,6 +243,9 @@ class BotLogicHandling(BotInteraction):
         self.start_message(chat_id=self.received_chat_id, username=self.received_chat_username)
 
     def external_command(self):
+        pass
+
+    def do_nothing(self):
         pass
 
     def save_positive_feedback_and_change_state_to_question(self):
