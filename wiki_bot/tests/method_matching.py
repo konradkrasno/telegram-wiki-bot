@@ -1,3 +1,24 @@
+fake_text = [
+    "/start",
+    "/something",
+    "This is answer text",
+    "witam",
+    "siema",
+    "do widzenia",
+    "tak",
+    "nie"
+]
+
+states = [
+    'question',
+    'answer_feedback'
+]
+
+greetings = [
+    "first_greet",
+    "greet",
+    "sign_off"
+]
 
 method_matching = {
     'question': {

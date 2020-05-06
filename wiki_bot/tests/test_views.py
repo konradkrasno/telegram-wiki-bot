@@ -6,7 +6,7 @@ from wiki_bot.views import BotInteractionView
 from wiki_bot.bot_logic import BotInteraction, BotLogicHandling
 from wiki_bot.models import State, Greeting
 
-from wiki_bot.tests.method_matching import method_matching
+from wiki_bot.tests.method_matching import method_matching, fake_text, states, greetings
 
 
 # Create your tests here.
@@ -15,28 +15,6 @@ from wiki_bot.tests.method_matching import method_matching
 class BotInteractionViewTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
-
-        self.fake_text = [
-            "/start",
-            "/something",
-            "This is answer text",
-            "witam",
-            "siema",
-            "do widzenia",
-            "tak",
-            "nie"
-        ]
-
-        self.states = [
-            'question',
-            'answer_feedback'
-        ]
-
-        self.greetings = [
-            "first_greet",
-            "greet",
-            "sign_off"
-        ]
 
     @staticmethod
     def fake_data(text):
@@ -59,27 +37,23 @@ class BotInteractionViewTests(TestCase):
 
     def test_post(self):
 
-        for state in self.states:
-            for greeting in self.greetings:
-                for text in self.fake_text:
-                    try:
-                        method = method_matching[state][greeting][text]
-                    except KeyError:
-                        with patch('builtins.print') as mock_print:
-                            request = self.factory.post('/wiki_bot', self.fake_data(text),
-                                                        content_type='application/json')
-                            biv = BotInteractionView()
-                            biv.post(request)
+        for state in states:
+            for greeting in greetings:
+                for text in fake_text:
+                    method = method_matching[state][greeting][text]
 
-                            mock_print.assert_called_with('KeyError: {!r}'.
-                                                          format(BotInteraction.check_outcome(text)))
-                    else:
-                        with self.subTest("{}, {}, {} -> {}".format(state, greeting, text, method)):
-                            with patch.object(State, 'get_last_state', return_value=state) as mock_state:
-                                with patch.object(Greeting, 'get_last_greeting', return_value=greeting) as mock_greeting:
-                                    with patch.object(BotLogicHandling, method) as mock_method:
+                    with self.subTest("{}, {}, {} -> {}".format(state, greeting, text, method)):
+                        with patch.object(State, 'get_last_state', return_value=state) as mock_state:
+                            with patch.object(Greeting, 'get_last_greeting', return_value=greeting) as mock_greeting:
+                                with patch.object(BotLogicHandling, method) as mock_method:
+                                    with patch('builtins.print') as mock_print:
                                         request = self.factory.post('/wiki_bot', self.fake_data(text),
                                                                     content_type='application/json')
                                         biv = BotInteractionView()
                                         biv.post(request)
-                                        mock_method.assert_called_with()
+
+                                        try:
+                                            mock_method.assert_called_with()
+                                        except AssertionError:
+                                            mock_print.assert_called_with('KeyError: {!r}'.
+                                                                          format(BotInteraction.check_outcome(text)))
