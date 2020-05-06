@@ -46,14 +46,9 @@ class BotInteractionViewTests(TestCase):
                         with patch.object(State, 'get_last_state', return_value=state) as mock_state:
                             with patch.object(Greeting, 'get_last_greeting', return_value=greeting) as mock_greeting:
                                 with patch.object(BotLogicHandling, method) as mock_method:
-                                    with patch('builtins.print') as mock_print:
-                                        request = self.factory.post('/wiki_bot', self.fake_data(text),
-                                                                    content_type='application/json')
-                                        biv = BotInteractionView()
-                                        biv.post(request)
+                                    request = self.factory.post('/wiki_bot', self.fake_data(text),
+                                                                content_type='application/json')
+                                    biv = BotInteractionView()
+                                    biv.post(request)
 
-                                        try:
-                                            mock_method.assert_called_with()
-                                        except AssertionError:
-                                            mock_print.assert_called_with('KeyError: {!r}'.
-                                                                          format(BotInteraction.check_outcome(text)))
+                                    mock_method.assert_called_with()
