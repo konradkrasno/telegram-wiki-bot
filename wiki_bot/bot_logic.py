@@ -34,7 +34,15 @@ class BotInteraction:
     @staticmethod
     def request_message(request):
         data = json.loads(request.body)
-        message = data["message"]
+        print("request.body: ", request.body)
+        try:
+            message = data["message"]
+        except KeyError:
+            try:
+                message = data["edited_message"]
+            except KeyError:
+                message = "none"
+
         return message
 
     @staticmethod
