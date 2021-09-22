@@ -1,4 +1,4 @@
-Django==3.0.7
+Django==3.1.13
 requests==2.22.0
 elasticsearch-dsl==7.1.0
 flashtext==2.7
